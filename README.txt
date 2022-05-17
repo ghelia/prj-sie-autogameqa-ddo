@@ -2,7 +2,7 @@
 
 Discovery of Deep Optionsのモデルの実装とGymのTaxiv3に対しての動作確認。
 
-論文：[Multi-Level Discovery of Deep Options](https://arxiv.org/pdf/1703.08294.pdf)
+論文： [Multi-Level Discovery of Deep Options](https://arxiv.org/pdf/1703.08294.pdf)
 
 
 ## 学習

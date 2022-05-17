@@ -7,6 +7,7 @@ Discovery of Deep Optionsのモデルの実装とGymのTaxiv3に対しての動�
 
 ## 開発環境
 
+モジュールをインストールするために以下のコマンドを実行する。
 ```
 python3 setup.py install
 ```

@@ -5,6 +5,13 @@ Discovery of Deep Optionsのモデルの実装とGymのTaxiv3に対しての動�
 論文： [Multi-Level Discovery of Deep Options](https://arxiv.org/pdf/1703.08294.pdf)
 
 
+## 開発環境
+
+```
+python3 setup.py install
+```
+
+
 ## 学習
 
 `train.py`でモデルを学習する：

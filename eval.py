@@ -4,8 +4,8 @@ import argparse
 
 import torch
 
-from env import Env
-from network import TaxiAgent
+from ddo.env import Env
+from ddo.network import TaxiAgent
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test and visualize a trained agent on Taxi-V3")

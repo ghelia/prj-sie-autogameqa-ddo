@@ -4,9 +4,9 @@ from typing import List, Tuple, NamedTuple, MutableMapping, Optional
 import torch
 import numpy as np
 
-from config import Config
-from forward_backward import ForwardBackward
-from utils import Step, Option, Agent
+from .config import Config
+from .forward_backward import ForwardBackward
+from .utils import Step, Option, Agent
 
 
 def add_logprob(logprobs: List[torch.Tensor],

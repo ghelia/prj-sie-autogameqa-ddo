@@ -6,8 +6,8 @@ import torch
 import gym
 import numpy as np
 
-from config import Config
-from utils import Step
+from .config import Config
+from .utils import Step
 
 class Action:
     DOWN = 0       # 0: move south

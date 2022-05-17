@@ -2,8 +2,8 @@ from typing import List, Tuple, NamedTuple, MutableMapping, Optional
 
 import torch
 
-from config import Config
-from utils import Step, Option, Agent
+from .config import Config
+from .utils import Step, Option, Agent
 
 
 class ForwardBackward:

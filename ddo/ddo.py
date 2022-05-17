@@ -5,11 +5,11 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
-from config import Config
-from network import DDOLoss, TaxiAgent
-from utils import Agent
-from env import Expert, Env
-from recorder import Recorder
+from .config import Config
+from .network import DDOLoss, TaxiAgent
+from .utils import Agent
+from .env import Expert, Env
+from .recorder import Recorder
 
 
 def eval_agent(agent: TaxiAgent, expert: Expert, env: Env) -> None:

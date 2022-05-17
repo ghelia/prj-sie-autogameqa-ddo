@@ -2,7 +2,7 @@ from typing import List, Tuple, NamedTuple, MutableMapping, Optional
 
 import torch
 
-from config import Config
+from .config import Config
 
 
 class Step(NamedTuple):

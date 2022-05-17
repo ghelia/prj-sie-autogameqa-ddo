@@ -1,10 +1,10 @@
 import os
 from datetime import datetime
 
-from ddo import ddo
-from network import TaxiAgent, DebugAgent
-from recorder import Recorder
-from env import TaxiBatch
+from ddo.ddo import ddo
+from ddo.network import TaxiAgent, DebugAgent
+from ddo.recorder import Recorder
+from ddo.env import TaxiBatch
 
 
 

@@ -19,7 +19,7 @@ def eval_agent(agent: TaxiAgent, expert: Expert, env: Env) -> None:
     for s in range(1000):
         expert_action = expert.action(env)
         obs = env.tensor().reshape([1, -1])
-        agent_action = agent.action(obs)
+        agent_action = agent.action(obs, greedy=True)
         env.step(expert_action)
         if expert_action == agent_action:
             success += 1

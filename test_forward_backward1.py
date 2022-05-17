@@ -37,9 +37,8 @@ class DummyTermination(torch.nn.Module):
         return self.linear(obs.inputs).reshape([-1]).sigmoid()
 
 
-class TestForwardBackward:
+class TestForwardBackward1:
     def setup_method(self) -> None:
-        self.policy = DummyPolicy()
         self.trajectory = []
         for _ in range(Config.nsteps):
             step = Step(

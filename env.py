@@ -4,6 +4,7 @@ from typing import Tuple, List
 
 import torch
 import gym
+import numpy as np
 
 from config import Config
 from utils import Step
@@ -110,6 +111,8 @@ class Expert:
         self.picked = False
 
     def action(self, env: Env) -> int:
+        if np.random.random() < Config.taxi_expert_epsilon:
+            return np.random.randint(4)
         if self.picked:
             goal = env.destination_index
             if Goal[goal] == env.position:

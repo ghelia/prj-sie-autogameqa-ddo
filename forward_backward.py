@@ -37,9 +37,8 @@ class ForwardBackward:
             action_prob = option.policy(previous_obs)[torch.arange(Config.batch_size), previous_action]
             termination_prob = option.termination(current_obs)
             if idx == option_idx:
-                stay_to_option_prob += action_prob * previous_option_prob * termination_prob
-            else:
-                any_switch_prob += action_prob * previous_option_prob * (1 - termination_prob)
+                stay_to_option_prob += action_prob * previous_option_prob * (1 - termination_prob)
+            any_switch_prob += action_prob * previous_option_prob * termination_prob
         return any_switch_prob*switch_to_option_prob + stay_to_option_prob + Config.epsilon
 
     def backward_option_prob(self, option_idx: int, step: int) -> torch.Tensor:
@@ -113,6 +112,12 @@ class ForwardBackward:
                 (1. - option_end_prob) *
                 self.backward_option_prob(option_idx, step + 1)
             )
+
     def option_will_terminate_factor(self, option_idx: int, step: int) -> torch.Tensor:
         with torch.no_grad():
             return self.is_option_factor(option_idx, step) - self.option_will_continue_factor(option_idx, step)
+
+    def useless_switch(self, option_idx: int, step: int) -> torch.Tensor:
+        is_option_factor = self.is_option_factor(option_idx, step - 1)
+        useless_switch = is_option_factor * self.has_switch_to_option_factor(option_idx, step)
+        return useless_switch

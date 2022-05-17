@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 
 from ddo import ddo
-from network import TaxiAgent
+from network import TaxiAgent, DebugAgent
 from recorder import Recorder
 from env import TaxiBatch
 
@@ -13,6 +13,7 @@ if not os.path.exists(os.path.join("./saves", session)):
     os.makedirs(os.path.join("./saves", session))
 recorder = Recorder(os.path.join("./logs", session))
 save_path = os.path.join("./saves", session)
+# agent = DebugAgent()
 agent = TaxiAgent()
 batch = TaxiBatch()
 ddo(agent, recorder, save_path, batch)

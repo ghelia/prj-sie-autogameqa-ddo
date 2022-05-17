@@ -23,3 +23,5 @@ $> python3 train.py
 ```
 $> python3 eval.py trained_checkpoints/option4.chkpt
 ```
+
+![alt text](https://github.com/ghelia/prj-sie-autogameqa-ddo/blob/master/ddo-taxiv3.gif)

@@ -35,9 +35,7 @@ class DDOLoss(torch.nn.Module):
                 add_logprob(logprobs, meta[:, opt_idx], has_switch_to_option_factor)
                 add_logprob(logprobs, action, is_option_factor)
                 if step_idx < len(trajectory) - 1:
-                    useless_next_switch = 0.
-                    if Config.useless_switch_factor:
-                        useless_next_switch = fb.useless_switch(opt_idx, step_idx + 1)
+                    useless_next_switch = fb.useless_switch(opt_idx, step_idx + 1) * Config.useless_switch_factor
                     next_step = trajectory[step_idx + 1]
                     next_termination = option.termination(next_step.current_obs)
                     option_will_continue_factor = fb.option_will_continue_factor(opt_idx, step_idx)
@@ -140,7 +138,7 @@ class TaxiAgent(Agent):
         else:
             selection_distribution = torch.distributions.categorical.Categorical(self.meta(obs))
             self.current_option = selection_distribution.sample()[0].int().item()
-        # self.current_option = 3
+        # self.current_option = 1
 
         self.meta_prob = self.meta(obs)[0][self.current_option]
         self.option_tracker[self.current_option] += 1

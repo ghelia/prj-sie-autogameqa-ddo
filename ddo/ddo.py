@@ -12,7 +12,7 @@ from .env import Expert, Env
 from .recorder import Recorder
 
 
-def eval_agent(agent: TaxiAgent, expert: Expert, env: Env) -> None:
+def eval_agent(agent: TaxiAgent, expert: Expert, env: Env, recorder: Recorder) -> None:
     env.reset()
     agent.reset()
     success = 0
@@ -23,6 +23,7 @@ def eval_agent(agent: TaxiAgent, expert: Expert, env: Env) -> None:
         env.step(expert_action)
         if expert_action == agent_action:
             success += 1
+    recorder.scalar(success/1000, "evaluation")
     print("success : ", success/1000)
     print("option selections : ", agent.option_tracker)
     print("option changements : ", agent.option_change_tracker)
@@ -53,7 +54,7 @@ def ddo(agent: Agent, recorder: Recorder, save_path: str, batch: Callable) -> No
         torch.save(agent.state_dict(), os.path.join(save_path, f'agent-{E}.chkpt'))
         print(f"Loss {np.mean(all_losses)}")
         recorder.gradients_and_weights(agent)
-        recorder.end_epoch()
+        eval_agent(agent, expert, env, recorder)
         scheduler.step()
-        eval_agent(agent, expert, env)
+        recorder.end_epoch()
 

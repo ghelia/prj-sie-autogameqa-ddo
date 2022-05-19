@@ -1,9 +1,9 @@
 import torch
 import numpy as np
 
-from config import Config
-from utils import Agent, Option, Step
-from forward_backward import *
+from ddo.config import Config
+from ddo.utils import Agent, Option, Step
+from ddo.forward_backward import ForwardBackward
 
 Config.batch_size = 1
 Config.noptions = 6

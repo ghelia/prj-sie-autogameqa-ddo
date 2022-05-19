@@ -36,6 +36,14 @@ $> python train.py
 $> python eval.py trained_checkpoints/option4.chkpt
 ```
 
+`eval.py`を実行するとき、以下の引数が使える：
+
+```
+--greedy                    動作、完了、オプション選択はGreedyで選択する（デフォルトはモデルが出力する確率からランダムに引く）
+--only-display-option N     オプションNが使用される時だけに環境をディスプレーする（オプションの行動を確認するために使える）
+--only-use-option N         オプションNだけ使用する（一つのオプションだけでモデルが動かないと確認するために使える）
+```
+
 ![alt text](https://github.com/ghelia/prj-sie-autogameqa-ddo/blob/master/ddo-taxiv3.gif)
 
 

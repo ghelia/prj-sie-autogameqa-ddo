@@ -130,7 +130,7 @@ class TaxiAgent(Agent):
         self.option_tracker = [0 for _ in range(Config.noptions)]
         self.option_change_tracker = [0 for _ in range(Config.noptions)]
 
-    def select_option(self, obs: torch.Tensor, greedy: bool = False) -> None:
+    def select_option(self, obs: torch.Tensor, greedy: bool = False, force_option: Optional[int] = None) -> None:
         previous = self.current_option
 
         if greedy:
@@ -138,7 +138,8 @@ class TaxiAgent(Agent):
         else:
             selection_distribution = torch.distributions.categorical.Categorical(self.meta(obs))
             self.current_option = selection_distribution.sample()[0].int().item()
-        # self.current_option = 1
+        if force_option is not None:
+            self.current_option = 1
 
         self.meta_prob = self.meta(obs)[0][self.current_option]
         self.option_tracker[self.current_option] += 1
@@ -146,18 +147,18 @@ class TaxiAgent(Agent):
             self.option_change_tracker[self.current_option] += 1
         self.previous_option = self.current_option
 
-    def action(self, obs: torch.Tensor, greedy: bool = False) -> int:
+    def action(self, obs: torch.Tensor, greedy: bool = False, only_option: Optional[int] = None) -> int:
         assert obs.shape[0] == 1
         if self.current_option < 0:
-            self.select_option(obs, greedy)
+            self.select_option(obs, greedy, only_option)
         option = self.options[self.current_option]
         self.termination_prob = option.termination(obs)[0].item()
         if greedy:
             if self.termination_prob > 0.5:
-                self.select_option(obs, greedy)
+                self.select_option(obs, greedy, only_option)
         else:
             if np.random.random() < self.termination_prob:
-                self.select_option(obs, greedy)
+                self.select_option(obs, greedy, only_option)
 
         if greedy:
             action = option.policy(obs)[0].argmax().int().item()

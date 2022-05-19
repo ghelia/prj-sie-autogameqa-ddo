@@ -8,9 +8,9 @@ if __name__ == '__main__':
         author='Merlin Dugot',
         author_email='merlin.dugot@ghelia.com',
         packages=setuptools.find_packages(),
-        description='Deep Discovery of Options',
+        description='Discovery of Deep Options',
         url='https://github.com/ghelia/prj-sie-autogameqa-ddo',
-        long_description=open('README.txt').read(),
+        long_description=open('README.md').read(),
         install_requires=[
             "torch",
             "gym",

@@ -12,7 +12,7 @@ Discovery of Deep Optionsのモデルの実装とGymのTaxiv3に対しての動�
 モジュールをインストールするために以下のコマンドを実行する。
 
 ```
-python3 setup.py install
+python setup.py install
 ```
 
 
@@ -21,7 +21,7 @@ python3 setup.py install
 `train.py`でモデルを学習する：
 
 ```
-$> python3 train.py
+$> python train.py
 ```
 
 モデルのCheckpointが`./saves/<datetime>/`の中に保存される。
@@ -33,7 +33,7 @@ $> python3 train.py
 `eval.py <checkpoint>`でモデルの動作を確認できる。
 
 ```
-$> python3 eval.py trained_checkpoints/option4.chkpt
+$> python eval.py trained_checkpoints/option4.chkpt
 ```
 
 ![alt text](https://github.com/ghelia/prj-sie-autogameqa-ddo/blob/master/ddo-taxiv3.gif)

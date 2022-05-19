@@ -7,7 +7,7 @@ Discovery of Deep Optionsのモデルの実装とGymのTaxiv3に対しての動�
 
 ## 開発環境
 
-`Python 3.9.10`と`Python 3.10.2`でテストされた
+`Python 3.9.10`と`Python 3.10.2`でテストされた。
 
 モジュールをインストールするために以下のコマンドを実行する。
 

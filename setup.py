@@ -12,6 +12,8 @@ if __name__ == '__main__':
         url='https://github.com/ghelia/prj-sie-autogameqa-ddo',
         long_description=open('README.md').read(),
         install_requires=[
+            "protobuf==3.20.1",
+            "pygame",
             "torch",
             "gym",
             "numpy",

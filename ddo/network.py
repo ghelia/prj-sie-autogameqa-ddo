@@ -22,14 +22,31 @@ def add_logprob(logprobs: List[torch.Tensor],
 class DDOLoss(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
+        self.KL = torch.nn.KLDivLoss(reduction="batchmean")
+
+    def kl_divergence(self, all_actions_probs: List[torch.Tensor]) -> torch.Tensor:
+        divs = []
+        noptions = len(all_actions_probs)
+        assert noptions == Config.noptions
+        for i in range(noptions):
+            for j in range(noptions):
+                prob1 = all_actions_probs[i]
+                prob2 = all_actions_probs[j]
+                if i != j:
+                    divs.append(self.KL((prob1 + Config.epsilon).log(), prob2))
+        return torch.stack(divs).mean()
 
     def forward(self, trajectory: List[Step], agent: Agent) -> torch.Tensor:
         fb = ForwardBackward(agent, trajectory)
         logprobs = []
+        all_kldivs = []
         for step_idx, step in enumerate(trajectory):
             meta = agent.meta(step.current_obs)
+            all_actions_probs = []
             for opt_idx, option in enumerate(agent.options):
-                action = option.policy(step.current_obs)[torch.arange(Config.batch_size), step.current_action]
+                actions_probs = option.policy(step.current_obs)
+                all_actions_probs.append(actions_probs)
+                action = actions_probs[torch.arange(Config.batch_size), step.current_action]
                 is_option_factor = fb.is_option_factor(opt_idx, step_idx)
                 has_switch_to_option_factor = fb.has_switch_to_option_factor(opt_idx, step_idx)
                 add_logprob(logprobs, meta[:, opt_idx], has_switch_to_option_factor)
@@ -42,7 +59,9 @@ class DDOLoss(torch.nn.Module):
                     option_will_terminate_factor = fb.option_will_terminate_factor(opt_idx, step_idx)
                     add_logprob(logprobs, next_termination, option_will_terminate_factor - useless_next_switch)
                     add_logprob(logprobs, (1. - next_termination), option_will_continue_factor + useless_next_switch)
-        return -torch.cat(logprobs).mean()
+            kldiv = self.kl_divergence(all_actions_probs)
+            all_kldivs.append(kldiv)
+        return -torch.cat(logprobs).mean() + Config.kl_divergence_factor * torch.stack(all_kldivs).mean()
 
 
 class TaxiMetaNetwork(torch.nn.Module):

@@ -61,7 +61,7 @@ class DDOLoss(torch.nn.Module):
                     add_logprob(logprobs, (1. - next_termination), option_will_continue_factor + useless_next_switch)
             kldiv = self.kl_divergence(all_actions_probs)
             all_kldivs.append(kldiv)
-        return -torch.cat(logprobs).mean() + Config.kl_divergence_factor * torch.stack(all_kldivs).mean()
+        return (-torch.cat(logprobs).mean(), -torch.stack(all_kldivs).mean())
 
 
 class TaxiMetaNetwork(torch.nn.Module):

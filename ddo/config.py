@@ -13,7 +13,7 @@ class Config:
     epsilon = 1e-12
 
     useless_switch_factor = 0.33
-    kl_divergence_factor = 0.1
+    kl_divergence_factor = 0.000
 
     taxi_nrow = 5
     taxi_ncol = 5

@@ -41,18 +41,22 @@ def ddo(agent: Agent, recorder: Recorder, save_path: str, batch: Callable) -> No
         print(f"")
         print(f"Epoch {E}")
         all_losses = []
+        all_kl_losses = []
         for e in tqdm(range(Config.nsubepoch)):
             optimizer.zero_grad()
             trajectory = batch(Config.batch_size)
 
-            loss = loss_func(trajectory, agent)
+            loss, kl_loss = loss_func(trajectory, agent)
             all_losses.append(loss.item())
-            loss.backward()
+            all_kl_losses.append(kl_loss.item())
+            (loss + Config.kl_divergence_factor*kl_loss).backward()
             optimizer.step()
             recorder.scalar(loss.item(), "loss")
+            recorder.scalar(kl_loss.item(), "kl_loss")
             recorder.scalar(scheduler.get_last_lr()[0], "learning rate")
         torch.save(agent.state_dict(), os.path.join(save_path, f'agent-{E}.chkpt'))
         print(f"Loss {np.mean(all_losses)}")
+        print(f"KL Loss {np.mean(all_kl_losses)}")
         recorder.gradients_and_weights(agent)
         eval_agent(agent, expert, env, recorder)
         scheduler.step()

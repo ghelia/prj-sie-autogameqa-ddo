@@ -64,13 +64,31 @@ class DDOLoss(torch.nn.Module):
         return (-torch.cat(logprobs).mean(), -torch.stack(all_kldivs).mean())
 
 
+class Dense(torch.nn.Module):
+    def __init__(self, layers_dims: List[int], activation: torch.nn.Module, output_activation: torch.nn.Module) -> None:
+        super().__init__()
+        layers = []
+        previous = layers_dims[0]
+        for idx, dim in enumerate(layers_dims[1:]):
+            if idx > 0:
+                layers.append(activation)
+            layers.append(torch.nn.Linear(previous, dim))
+            previous = dim
+        layers.append(output_activation)
+        self.layers = torch.nn.Sequential(*layers)
+
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        outputs = self.layers(inputs)
+        return outputs
+
+
 class TaxiMetaNetwork(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.layers = torch.nn.Sequential(
-            torch.nn.Linear(Config.taxi_ninputs, Config.taxi_hidden_layer),
+        self.dense = Dense(
+            [Config.taxi_ninputs] + Config.taxi_hidden_layer + [Config.noptions],
             torch.nn.Tanh(),
-            torch.nn.Linear(Config.taxi_hidden_layer, Config.noptions),
             torch.nn.Softmax(dim=1)
         )
         self.apply(self._init_weights)
@@ -82,17 +100,16 @@ class TaxiMetaNetwork(torch.nn.Module):
                 module.bias.data.normal_(mean=0.0, std=Config.taxi_init_std)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        outputs = self.layers(inputs)
+        outputs = self.dense(inputs)
         return outputs
 
 
 class TaxiPolicyNetwork(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.layers = torch.nn.Sequential(
-            torch.nn.Linear(Config.taxi_ninputs, Config.taxi_hidden_layer),
+        self.dense = Dense(
+            [Config.taxi_ninputs] + Config.taxi_hidden_layer + [Config.taxi_nactions],
             torch.nn.Tanh(),
-            torch.nn.Linear(Config.taxi_hidden_layer, Config.taxi_nactions),
             torch.nn.Softmax(dim=1)
         )
         self.apply(self._init_weights)
@@ -104,17 +121,16 @@ class TaxiPolicyNetwork(torch.nn.Module):
                 module.bias.data.normal_(mean=0.0, std=Config.taxi_init_std)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        outputs = self.layers(inputs)
+        outputs = self.dense(inputs)
         return outputs
 
 
 class TaxiTerminationNetwork(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.layers = torch.nn.Sequential(
-            torch.nn.Linear(Config.taxi_ninputs, Config.taxi_hidden_layer),
+        self.dense = Dense(
+            [Config.taxi_ninputs] + Config.taxi_hidden_layer + [1],
             torch.nn.Tanh(),
-            torch.nn.Linear(Config.taxi_hidden_layer, 1),
             torch.nn.Sigmoid()
         )
         self.apply(self._init_weights)
@@ -126,7 +142,7 @@ class TaxiTerminationNetwork(torch.nn.Module):
                 module.bias.data.normal_(mean=0.0, std=Config.taxi_init_std)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        outputs = self.layers(inputs).reshape([-1])
+        outputs = self.dense(inputs).reshape([-1])
         return outputs
 
 

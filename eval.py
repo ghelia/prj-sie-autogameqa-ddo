@@ -58,7 +58,7 @@ if __name__ == "__main__":
     parser.add_argument("--greedy", action="store_true", help="choose next action greedly with argmax on actions probs (action randomly sampled from actions probs by default)")
     parser.add_argument("--only-display-option", type=int, help="only display the environment whan a specific option is selected (display for all the options by default", default=-1)
     parser.add_argument("--only-use-option", type=int, help="only use a specific option of the model", default=None)
-    parser.add_argument("--framerate", type=float, help="duration of one frame when rendering environment", default=.1)
+    parser.add_argument("--framerate", type=float, help="duration of one frame when rendering environment", default=.01)
     args = parser.parse_args()
     env = Env()
     agent = TaxiAgent()

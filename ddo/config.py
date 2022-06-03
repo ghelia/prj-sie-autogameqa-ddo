@@ -3,7 +3,7 @@ import torch
 
 class Config:
 
-    learning_rate = 0.005
+    learning_rate = 0.03
     learning_rate_decay = 0.995
     batch_size = 10
     nsteps = 100
@@ -12,8 +12,8 @@ class Config:
     nsubepoch = 10
     epsilon = 1e-12
 
-    useless_switch_factor = 0.33
-    kl_divergence_factor = 0.000
+    useless_switch_factor = 0.15
+    kl_divergence_factor = 0.00015
 
     taxi_nrow = 5
     taxi_ncol = 5
@@ -29,7 +29,7 @@ class Config:
 
     taxi_ninputs = taxi_nrow + taxi_ncol + taxi_npassenger_pos + taxi_ndestination
     taxi_nactions = 6
-    taxi_hidden_layer = 32
+    taxi_hidden_layer = [64, 64, 64]
 
     dtype = torch.float32
     if torch.cuda.is_available():

@@ -17,6 +17,16 @@ class Action:
     PICKUP = 4   # 4: pickup passenger
     DROPOFF = 5  # 5: drop off passenger
 
+    def labels() -> List[str]:
+        return [
+            "Down",
+            "Up",
+            "Right",
+            "Left",
+            "Pickup",
+            "Dropoff"
+        ]
+
 red = (0, 0)
 green = (0, 4)
 yellow = (4, 0)

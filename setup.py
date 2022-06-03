@@ -19,7 +19,7 @@ if __name__ == '__main__':
             "numpy",
             "tqdm",
             "mypy",
-            "tensorboard",
+            "tensorboard==2.7.0",
             "pytest"
         ]
     )

@@ -188,6 +188,13 @@ class TaxiAgent(Agent):
         self.action_prob = option.policy(obs)[0][action]
         return action
 
+    def all_probs(self, obs: torch.Tensor) -> torch.Tensor:
+        probs = []
+        for option in self.options:
+            prob = option.policy(obs)[0]
+            probs.append(prob)
+        return torch.stack(probs)
+
 class DebugPolicyNetwork(torch.nn.Module):
     def __init__(self, index: int) -> None:
         self.index = index

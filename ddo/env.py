@@ -94,11 +94,14 @@ class Env:
         self.decode(state)
 
     def tensor(self) -> torch.Tensor:
+        return self._tensor(self.taxi_row, self.taxi_col, self.passenger_index, self.destination_index)
+
+    def _tensor(self, row, col, passenger, destination) -> torch.Tensor:
         inputs = torch.zeros([Config.taxi_ninputs])
-        inputs[Config.taxi_row_offset + self.taxi_row] = 1.
-        inputs[Config.taxi_col_offset + self.taxi_col] = 1.
-        inputs[Config.taxi_passenger_offset + self.passenger_index] = 1.
-        inputs[Config.taxi_destination_offset + self.destination_index] = 1.
+        inputs[Config.taxi_row_offset + row] = 1.
+        inputs[Config.taxi_col_offset + col] = 1.
+        inputs[Config.taxi_passenger_offset + passenger] = 1.
+        inputs[Config.taxi_destination_offset + destination] = 1.
         return inputs
 
     def render(self) -> None:

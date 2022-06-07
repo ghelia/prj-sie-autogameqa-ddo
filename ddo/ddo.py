@@ -12,21 +12,24 @@ from .env import Expert, Env
 from .recorder import Recorder
 
 
-def eval_agent(agent: TaxiAgent, expert: Expert, env: Env, recorder: Recorder) -> None:
+def eval_agent(agent: TaxiAgent, expert: Expert, env: Env, recorder: Recorder) -> float:
     env.reset()
     agent.reset()
     success = 0
-    for s in range(1000):
+    L = 1000
+    for s in range(L):
         expert_action = expert.action(env)
         obs = env.tensor().reshape([1, -1])
         agent_action = agent.action(obs, greedy=True)
         env.step(expert_action)
         if expert_action == agent_action:
             success += 1
-    recorder.scalar(success/1000, "evaluation")
-    print("success : ", success/1000)
+    success_rate = success/L
+    recorder.scalar(success_rate, "evaluation")
+    print("success : ", success_rate)
     print("option selections : ", agent.option_tracker)
     print("option changements : ", agent.option_change_tracker)
+    return success_rate
 
 
 def ddo(agent: Agent, recorder: Recorder, save_path: str, batch: Callable) -> None:
@@ -54,11 +57,11 @@ def ddo(agent: Agent, recorder: Recorder, save_path: str, batch: Callable) -> No
             recorder.scalar(loss.item(), "loss")
             recorder.scalar(kl_loss.item(), "kl_loss")
             recorder.scalar(scheduler.get_last_lr()[0], "learning rate")
-        torch.save(agent.state_dict(), os.path.join(save_path, f'agent-{E}.chkpt'))
         print(f"Loss {np.mean(all_losses)}")
         print(f"KL Loss {np.mean(all_kl_losses)}")
         recorder.gradients_and_weights(agent)
-        eval_agent(agent, expert, env, recorder)
+        success_rate = eval_agent(agent, expert, env, recorder)
         scheduler.step()
         recorder.end_epoch()
+        torch.save(agent.state_dict(), os.path.join(save_path, f'agent-{E}-{success_rate}.chkpt'))
 

@@ -11,27 +11,6 @@ from ddo.env import Env, Action, Goal
 from ddo.network import TaxiAgent
 from ddo.config import Config
 
-def plot_probs(ax: Any, all_probs: torch.Tensor, selected: int, title: str) -> None:
-    x_offset = -all_probs.shape[0]/2 * 0.1
-    x_axis = np.arange(all_probs.shape[1])
-    ax.set_xticks(x_axis)
-    ax.set_xticklabels(Action.labels())
-    for idx in range(all_probs.shape[0]):
-        probs = all_probs[idx]
-        ax.bar(x_axis + x_offset, probs.numpy(), 0.1, color=("red" if idx == selected else "blue"))
-        x_offset += 0.1
-    ax.set_title(title)
-    ax.set_ylabel("Action probability")
-
-def plot_all_probs(probs_list: List[torch.Tensor], title_list: List[str], selection_list: List[int]) -> None:
-    axid = [421, 422, 423, 424, 425, 426, 427, 428, 429]
-    assert len(probs_list) == len(title_list) == len(selection_list)
-    for idx in range(len(probs_list)):
-        ax = plt.subplot(axid[idx])
-        plot_probs(ax, probs_list[idx], selection_list[idx], title_list[idx])
-    plt.legend()
-    plt.show()
-    exit()
 
 def plot_option_choices(distributions: MutableMapping, keys: MutableMapping) -> None:
     x_offset = -Config.noptions/2 * 0.1
@@ -68,10 +47,6 @@ if __name__ == "__main__":
     distributions = {}
     all_distributions = {}
 
-    special_probs = {}
-    special_selection = {}
-    special_labels = {}
-
     special_keys = {
         "pickup 1": (Action.PICKUP, (0,0)),
         "pickup 2": (Action.PICKUP, (4,0)),
@@ -82,7 +57,6 @@ if __name__ == "__main__":
         "dropoff 3": (Action.DROPOFF, (0,4)),
         "dropoff 4": (Action.DROPOFF, (4,3))
     }
-    all_special_labels = {v:k for k,v in special_keys.items()}
 
     action_keys = {
         "pickup": Action.PICKUP,
@@ -117,10 +91,6 @@ if __name__ == "__main__":
                     distributions[(action, position)][agent.previous_option] = 0
                 distributions[(action, position)][agent.previous_option] += 1
 
-                if (action, position) in special_keys.values():
-                    special_probs[(action, position)] = all_probs
-                    special_selection[(action, position)] = agent.previous_option
-                    special_labels[(action, position)] = all_special_labels[(action, position)]
 
                 env.step(action)
                 if env.done:
@@ -141,5 +111,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         plot_option_choices(distributions, special_keys)
         plot_option_choices(all_distributions, action_keys)
-        plot_all_probs(list(special_probs.values()), list(special_labels.values()), list(special_selection.values()))
         exit()

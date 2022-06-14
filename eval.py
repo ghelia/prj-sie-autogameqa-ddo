@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from ddo.env import Env, Action, Goal
-from ddo.network import TaxiAgent
+from ddo.taxi.network import TaxiAgent
+from ddo.taxi.env import TaxiEnv, Action, Goal
 from ddo.config import Config
 
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     parser.add_argument("--only-use-option", type=int, help="only use a specific option of the model", default=None)
     parser.add_argument("--framerate", type=float, help="duration of one frame when rendering environment", default=.01)
     args = parser.parse_args()
-    env = Env()
+    env = TaxiEnv()
     agent = TaxiAgent()
     agent.load_state_dict(torch.load(args.checkpoint))
     only = args.only_display_option
@@ -109,6 +109,6 @@ if __name__ == "__main__":
                     print("skip")
                 step += 1
     except KeyboardInterrupt:
-        plot_option_choices(distributions, special_keys)
-        plot_option_choices(all_distributions, action_keys)
+        # plot_option_choices(distributions, special_keys)
+        # plot_option_choices(all_distributions, action_keys)
         exit()

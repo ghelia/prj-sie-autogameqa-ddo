@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import List, Tuple, NamedTuple, MutableMapping, Optional
 
 import torch
@@ -23,3 +24,7 @@ class Agent(torch.nn.Module):
         self.meta = meta
         self.options = torch.nn.Sequential(*options)
 
+class EvalMetric(torch.nn.Module):
+    @abstractmethod
+    def eval_agent(self, agent: Agent) -> float:
+        raise NotImplementedError

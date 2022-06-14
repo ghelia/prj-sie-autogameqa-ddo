@@ -13,7 +13,7 @@ def plot_probs(ax: Any, all_probs: torch.Tensor, title: str) -> None:
     x_offset = -all_probs.shape[0]/2 * 0.1
     x_axis = np.arange(all_probs.shape[1])
     ax.set_xticks(x_axis)
-    ax.set_xticklabels(Action.labels())
+    ax.set_xticklabels(Action.labels)
     for idx in range(all_probs.shape[0]):
         probs = all_probs[idx]
         ax.bar(x_axis + x_offset, probs.numpy(), 0.1, label=f"option {idx}")

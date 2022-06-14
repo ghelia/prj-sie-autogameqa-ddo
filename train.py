@@ -2,9 +2,9 @@ import os
 
 from ddo.ddo import ddo
 from ddo.config import Config
-from ddo.network import TaxiAgent, DebugAgent
+from ddo.taxi.network import TaxiAgent, DebugAgent
 from ddo.recorder import Recorder
-from ddo.env import TaxiBatch
+from ddo.taxi.env import TaxiBatch, TaxiEnv
 
 
 
@@ -14,5 +14,6 @@ recorder = Recorder(os.path.join("./logs", Config.session))
 save_path = os.path.join("./saves", Config.session)
 # agent = DebugAgent()
 agent = TaxiAgent()
-batch = TaxiBatch()
-ddo(agent, recorder, save_path, batch)
+env = TaxiEnv()
+batch = TaxiBatch(env)
+ddo(agent, recorder, save_path, batch, env)

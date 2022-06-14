@@ -6,8 +6,11 @@ import torch
 import gym
 import numpy as np
 
-from .config import Config
-from .utils import Step
+from ..config import Config
+from ..utils import Step
+from ..recorder import Recorder
+from ..utils import EvalMetric, Agent
+from .network import TaxiAgent
 
 class Action:
     DOWN = 0       # 0: move south
@@ -17,15 +20,14 @@ class Action:
     PICKUP = 4   # 4: pickup passenger
     DROPOFF = 5  # 5: drop off passenger
 
-    def labels() -> List[str]:
-        return [
-            "Down",
-            "Up",
-            "Right",
-            "Left",
-            "Pickup",
-            "Dropoff"
-        ]
+    labels = [
+        "Down",
+        "Up",
+        "Right",
+        "Left",
+        "Pickup",
+        "Dropoff"
+    ]
 
 red = (0, 0)
 green = (0, 4)
@@ -68,9 +70,22 @@ GoTo = [GoToRed, GoToGreen, GoToYellow, GoToBlue]
 Goal = [red, green, yellow, blue]
 
 
-class Env:
+class TaxiEnv(EvalMetric):
+    nrow = 5
+    ncol = 5
+    npassenger_pos = 5
+    ndestination = 4
+    expert_epsilon = 0.05
+    row_offset = 0
+    col_offset = nrow
+    passenger_offset = col_offset + ncol
+    destination_offset = passenger_offset + ndestination
+    ninputs = nrow + ncol + npassenger_pos + ndestination
+    nactions = 6
+
     def __init__(self) -> None:
         env = gym.make("Taxi-v3")
+        self.expert = Expert()
         self.env = env
         self.taxi_row: int
         self.taxi_col: int
@@ -78,7 +93,7 @@ class Env:
         self.destination_index: int
         self.position: Tuple[int, int]
         self.reset()
-        self.rewards = 0
+        self.rewards = 0.
         self.done = False
 
     def decode(self, state: int) -> None:
@@ -96,12 +111,12 @@ class Env:
     def tensor(self) -> torch.Tensor:
         return self._tensor(self.taxi_row, self.taxi_col, self.passenger_index, self.destination_index)
 
-    def _tensor(self, row, col, passenger, destination) -> torch.Tensor:
-        inputs = torch.zeros([Config.taxi_ninputs])
-        inputs[Config.taxi_row_offset + row] = 1.
-        inputs[Config.taxi_col_offset + col] = 1.
-        inputs[Config.taxi_passenger_offset + passenger] = 1.
-        inputs[Config.taxi_destination_offset + destination] = 1.
+    def _tensor(self, row: int, col: int, passenger: int, destination: int) -> torch.Tensor:
+        inputs = torch.zeros([self.ninputs])
+        inputs[self.row_offset + row] = 1.
+        inputs[self.col_offset + col] = 1.
+        inputs[self.passenger_offset + passenger] = 1.
+        inputs[self.destination_offset + destination] = 1.
         return inputs
 
     def render(self) -> None:
@@ -118,13 +133,32 @@ class Env:
         if done:
             self.reset()
 
+    def eval_agent(self, agent: Agent) -> float:
+        assert isinstance(agent, TaxiAgent)
+        self.reset()
+        agent.reset()
+        success = 0
+        L = 1000
+        for s in range(L):
+            expert_action = self.expert.action(self)
+            obs = self.tensor().reshape([1, -1])
+            agent_action = agent.action(obs, greedy=True)
+            self.step(expert_action)
+            if expert_action == agent_action:
+                success += 1
+        success_rate = success/L
+        print("success : ", success_rate)
+        print("option selections : ", agent.option_tracker)
+        print("option changements : ", agent.option_change_tracker)
+        return success_rate
+
 
 class Expert:
     def __init__(self) -> None:
         self.picked = False
 
-    def action(self, env: Env) -> int:
-        if np.random.random() < Config.taxi_expert_epsilon:
+    def action(self, env: TaxiEnv) -> int:
+        if np.random.random() < TaxiEnv.expert_epsilon:
             return np.random.randint(4)
         if self.picked:
             goal = env.destination_index
@@ -141,11 +175,11 @@ class Expert:
 
 
 class TaxiBatch:
-    def __init__(self) -> None:
-        self.env =  Env()
-        self.expert = Expert()
+    def __init__(self, env: TaxiEnv) -> None:
+        self.env =  env
+        self.expert = env.expert
 
-    def __call__(self, batch_size) -> List[Step]:
+    def __call__(self, batch_size: int) -> List[Step]:
         all_obs = []
         all_actions = []
         for bi in range(batch_size):
@@ -166,18 +200,3 @@ class TaxiBatch:
             )
             trajectory.append(step)
         return trajectory
-
-if __name__ == "__main__":
-    env = Env()
-    expert = Expert()
-
-    try:
-        while True:
-            os.system("clear")
-            action = expert.action(env)
-            env.step(action)
-            env.render()
-            print("Rewards : ", env.rewards)
-            time.sleep(0.1)
-    except KeyboardInterrupt:
-        exit()

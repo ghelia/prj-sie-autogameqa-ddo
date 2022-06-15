@@ -8,11 +8,11 @@ from tqdm import tqdm
 from .config import Config
 from .network import DDOLoss
 from .taxi.network import TaxiAgent
-from .utils import Agent, EvalMetric
+from .utils import Agent, Env
 from .recorder import Recorder
 
 
-def ddo(agent: Agent, recorder: Recorder, save_path: str, batch: Callable, metric: EvalMetric) -> None:
+def ddo(agent: Agent, recorder: Recorder, save_path: str, env: Env) -> None:
     optimizer = torch.optim.Adam(agent.parameters(), lr=Config.learning_rate)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=Config.learning_rate_decay)
     agent.train()
@@ -25,7 +25,7 @@ def ddo(agent: Agent, recorder: Recorder, save_path: str, batch: Callable, metri
         all_kl_losses = []
         for e in tqdm(range(Config.nsubepoch)):
             optimizer.zero_grad()
-            trajectory = batch(Config.batch_size)
+            trajectory = env.batch(Config.batch_size)
 
             loss, kl_loss = loss_func(trajectory, agent)
             all_losses.append(loss.item())
@@ -38,7 +38,7 @@ def ddo(agent: Agent, recorder: Recorder, save_path: str, batch: Callable, metri
         print(f"Loss {np.mean(all_losses)}")
         print(f"KL Loss {np.mean(all_kl_losses)}")
         recorder.gradients_and_weights(agent)
-        success_rate = metric.eval_agent(agent)
+        success_rate = env.eval_agent(agent)
         recorder.scalar(success_rate, "evaluation")
         scheduler.step()
         recorder.end_epoch()

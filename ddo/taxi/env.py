@@ -7,9 +7,10 @@ import gym
 import numpy as np
 
 from ..config import Config
+from .config import TaxiConfig
 from ..utils import Step
 from ..recorder import Recorder
-from ..utils import EvalMetric, Agent
+from ..utils import Env, Agent
 from .network import TaxiAgent
 
 class Action:
@@ -70,18 +71,7 @@ GoTo = [GoToRed, GoToGreen, GoToYellow, GoToBlue]
 Goal = [red, green, yellow, blue]
 
 
-class TaxiEnv(EvalMetric):
-    nrow = 5
-    ncol = 5
-    npassenger_pos = 5
-    ndestination = 4
-    expert_epsilon = 0.05
-    row_offset = 0
-    col_offset = nrow
-    passenger_offset = col_offset + ncol
-    destination_offset = passenger_offset + ndestination
-    ninputs = nrow + ncol + npassenger_pos + ndestination
-    nactions = 6
+class TaxiEnv(Env):
 
     def __init__(self) -> None:
         env = gym.make("Taxi-v3")
@@ -112,11 +102,11 @@ class TaxiEnv(EvalMetric):
         return self._tensor(self.taxi_row, self.taxi_col, self.passenger_index, self.destination_index)
 
     def _tensor(self, row: int, col: int, passenger: int, destination: int) -> torch.Tensor:
-        inputs = torch.zeros([self.ninputs])
-        inputs[self.row_offset + row] = 1.
-        inputs[self.col_offset + col] = 1.
-        inputs[self.passenger_offset + passenger] = 1.
-        inputs[self.destination_offset + destination] = 1.
+        inputs = torch.zeros([TaxiConfig.ninputs])
+        inputs[TaxiConfig.row_offset + row] = 1.
+        inputs[TaxiConfig.col_offset + col] = 1.
+        inputs[TaxiConfig.passenger_offset + passenger] = 1.
+        inputs[TaxiConfig.destination_offset + destination] = 1.
         return inputs
 
     def render(self) -> None:
@@ -150,7 +140,32 @@ class TaxiEnv(EvalMetric):
         print("success : ", success_rate)
         print("option selections : ", agent.option_tracker)
         print("option changements : ", agent.option_change_tracker)
+        self.reset()
+        agent.reset()
         return success_rate
+
+
+    def batch(self, batch_size: int) -> List[Step]:
+        all_obs = []
+        all_actions = []
+        for bi in range(batch_size):
+            obs = []
+            actions = []
+            for s in range(Config.nsteps):
+                obs.append(self.tensor())
+                action = self.expert.action(self)
+                self.step(action)
+                actions.append(action)
+            all_obs.append(obs)
+            all_actions.append(actions)
+        trajectory = []
+        for s in range(Config.nsteps):
+            step = Step(
+                torch.stack([obs[s] for obs in all_obs]),
+                torch.tensor([actions[s] for actions in all_actions], device=Config.device).long(),
+            )
+            trajectory.append(step)
+        return trajectory
 
 
 class Expert:
@@ -158,7 +173,7 @@ class Expert:
         self.picked = False
 
     def action(self, env: TaxiEnv) -> int:
-        if np.random.random() < TaxiEnv.expert_epsilon:
+        if np.random.random() < TaxiConfig.expert_epsilon:
             return np.random.randint(4)
         if self.picked:
             goal = env.destination_index
@@ -172,31 +187,3 @@ class Expert:
                 self.picked = True
                 return Action.PICKUP
             return GoTo[goal][env.taxi_row][env.taxi_col]
-
-
-class TaxiBatch:
-    def __init__(self, env: TaxiEnv) -> None:
-        self.env =  env
-        self.expert = env.expert
-
-    def __call__(self, batch_size: int) -> List[Step]:
-        all_obs = []
-        all_actions = []
-        for bi in range(batch_size):
-            obs = []
-            actions = []
-            for s in range(Config.nsteps):
-                obs.append(self.env.tensor())
-                action = self.expert.action(self.env)
-                self.env.step(action)
-                actions.append(action)
-            all_obs.append(obs)
-            all_actions.append(actions)
-        trajectory = []
-        for s in range(Config.nsteps):
-            step = Step(
-                torch.stack([obs[s] for obs in all_obs]),
-                torch.tensor([actions[s] for actions in all_actions], device=Config.device).long(),
-            )
-            trajectory.append(step)
-        return trajectory

@@ -4,29 +4,28 @@ import torch
 import numpy as np
 
 from ..config import Config
+from .config import TaxiConfig
 from ..utils import Option, Agent
 from ..network import Dense
 
 
 class TaxiNetworkBase(torch.nn.Module):
-    hidden_layer = [32, 32]
-    init_std = 1.
 
     def __init__(self) -> None:
         super().__init__()
 
     def _init_weights(self, module: torch.nn.Module) -> None:
         if isinstance(module, torch.nn.Linear):
-            module.weight.data.normal_(mean=0.0, std=self.init_std)
+            module.weight.data.normal_(mean=0.0, std=TaxiConfig.init_std)
             if module.bias is not None:
-                module.bias.data.normal_(mean=0.0, std=self.init_std)
+                module.bias.data.normal_(mean=0.0, std=TaxiConfig.init_std)
 
 
 class TaxiMetaNetwork(TaxiNetworkBase):
     def __init__(self) -> None:
         super().__init__()
         self.dense = Dense(
-            [Env.ninputs] + self.hidden_layer + [Config.noptions],
+            [TaxiConfig.ninputs] + TaxiConfig.hidden_layer + [Config.noptions],
             torch.nn.Tanh(),
             torch.nn.Softmax(dim=1)
         )
@@ -41,7 +40,7 @@ class TaxiPolicyNetwork(TaxiNetworkBase):
     def __init__(self) -> None:
         super().__init__()
         self.dense = Dense(
-            [Env.ninputs] + self.hidden_layer + [Env.nactions],
+            [TaxiConfig.ninputs] + TaxiConfig.hidden_layer + [TaxiConfig.nactions],
             torch.nn.Tanh(),
             torch.nn.Softmax(dim=1)
         )
@@ -56,7 +55,7 @@ class TaxiTerminationNetwork(TaxiNetworkBase):
     def __init__(self) -> None:
         super().__init__()
         self.dense = Dense(
-            [Env.ninputs] + self.hidden_layer + [1],
+            [TaxiConfig.ninputs] + TaxiConfig.hidden_layer + [1],
             torch.nn.Tanh(),
             torch.nn.Sigmoid()
         )
@@ -139,7 +138,7 @@ class DebugPolicyNetwork(TaxiNetworkBase):
         super().__init__()
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        outputs = torch.zeros([Config.batch_size, Env.nactions])
+        outputs = torch.zeros([Config.batch_size, TaxiConfig.nactions])
         outputs[:,self.index] = 10.
         return outputs.softmax(1)
 
@@ -147,9 +146,7 @@ class DebugPolicyNetwork(TaxiNetworkBase):
 class DebugAgent(TaxiAgent):
     def __init__(self) -> None:
         super().__init__()
-        assert Config.noptions == Env.nactions
+        assert Config.noptions == TaxiConfig.nactions
         self.options = torch.nn.Sequential(
-            *[Option(DebugPolicyNetwork(idx), TaxiTerminationNetwork()) for idx in range(Env.nactions)]
+            *[Option(DebugPolicyNetwork(idx), TaxiTerminationNetwork()) for idx in range(TaxiConfig.nactions)]
         )
-
-from .env import TaxiEnv as Env

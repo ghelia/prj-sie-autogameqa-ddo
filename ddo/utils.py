@@ -24,7 +24,10 @@ class Agent(torch.nn.Module):
         self.meta = meta
         self.options = torch.nn.Sequential(*options)
 
-class EvalMetric(torch.nn.Module):
+class Env(torch.nn.Module):
     @abstractmethod
     def eval_agent(self, agent: Agent) -> float:
+        raise NotImplementedError
+    @abstractmethod
+    def batch(self, batch_size: int) -> List[Step]:
         raise NotImplementedError

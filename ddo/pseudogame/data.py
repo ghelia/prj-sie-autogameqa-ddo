@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import pandas
 import torch
+import torchvision.transforms as transforms
 
 from ..utils import Env, Step, Agent
 from .config import PGConfig
@@ -15,9 +16,9 @@ CONTROLS: List[List[int]] = []
 
 
 class PGStep:
-    def __init__(self, frame_path: str, controls: List[int]) -> None:
+    def __init__(self, frame_path: str, controls: List[int], transform: transforms.Compose) -> None:
         img = Image.open(frame_path)
-        self.frame = np.array(img)
+        self.frame = transform(img)
         self.controls = controls
         if controls not in CONTROLS:
             CONTROLS.append(controls)
@@ -25,20 +26,21 @@ class PGStep:
 
 
 class Trajectory:
-    def __init__(self, dir_path: str, csv_path: str) -> None:
+    def __init__(self, dir_path: str, csv_path: str, transform: transforms.Compose) -> None:
         self.steps = []
         self.observations = []
         csv = pandas.read_csv(csv_path, delimiter=",")
         for idx in range(len(csv)):
             frame_path = csv.iloc[idx, 0]
             controls = csv.iloc[idx, 1:].tolist()
-            self.steps.append(PGStep(os.path.join(dir_path, frame_path), controls))
+            self.steps.append(PGStep(os.path.join(dir_path, frame_path), controls, transform))
         for step in range(len(self.steps)):
             ob = self._obs(step)
             self.observations.append(ob)
 
     def  obs(self, idx: int) -> Tuple[torch.Tensor, int]:
         return self.observations[idx]
+
 
     def  _obs(self, idx: int) -> Tuple[torch.Tensor, int]:
         action = self.steps[idx].action
@@ -49,7 +51,7 @@ class Trajectory:
                 fi = 0
             frames.append(self.steps[fi].frame)
         return (
-            torch.tensor(frames),
+            torch.stack(frames),
             action
         )
 
@@ -57,9 +59,13 @@ class Trajectory:
 class ExpertData(Env):
     def __init__(self, csv_list: List[str]) -> None:
         self.trajectories = []
+        self.transforms = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize(PGConfig.size)
+        ])
         for csv_path in csv_list:
             dir_path = os.path.dirname(csv_path)
-            traj = Trajectory(dir_path, csv_path)
+            traj = Trajectory(dir_path, csv_path, self.transforms)
             self.trajectories.append(traj)
 
     def eval_agent(self, agent: Agent) -> float:

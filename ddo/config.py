@@ -4,10 +4,10 @@ from datetime import datetime
 
 class Config:
 
-    learning_rate = 0.001
+    learning_rate = 0.0001
     learning_rate_decay = 0.995
     batch_size = 2
-    nsteps = 5
+    nsteps = 30
     noptions = 4
     nepoch = 100000
     nsubepoch = 10

@@ -37,6 +37,9 @@ class Agent(torch.nn.Module):
         self.option_tracker = [0 for _ in range(Config.noptions)]
         self.option_change_tracker = [0 for _ in range(Config.noptions)]
 
+    def preprocess(self, obs: torch.Tensor) -> torch.Tensor:
+        return obs
+
     def select_option(self, obs: torch.Tensor, greedy: bool = False, force_option: Optional[int] = None) -> None:
         previous = self.current_option
 
@@ -56,6 +59,7 @@ class Agent(torch.nn.Module):
 
     def action(self, obs: torch.Tensor, greedy: bool = False, only_option: Optional[int] = None) -> int:
         assert obs.shape[0] == 1
+        obs = self.preprocess(obs)
         if self.current_option < 0:
             self.select_option(obs, greedy, only_option)
         option = self.options[self.current_option]

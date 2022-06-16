@@ -37,10 +37,19 @@ class DDOLoss(torch.nn.Module):
         return torch.stack(divs).mean()
 
     def forward(self, trajectory: List[Step], agent: Agent) -> torch.Tensor:
-        fb = ForwardBackward(agent, trajectory)
+        pptraj = []
+        for step in trajectory:
+            pptraj.append(
+                Step(
+                    agent.preprocess(step.current_obs),
+                    step.current_action
+                )
+            )
+
+        fb = ForwardBackward(agent, pptraj)
         logprobs = []
         all_kldivs = []
-        for step_idx, step in enumerate(trajectory):
+        for step_idx, step in enumerate(pptraj):
             meta = agent.meta(step.current_obs)
             all_actions_probs = []
             for opt_idx, option in enumerate(agent.options):
@@ -51,9 +60,9 @@ class DDOLoss(torch.nn.Module):
                 has_switch_to_option_factor = fb.has_switch_to_option_factor(opt_idx, step_idx)
                 add_logprob(logprobs, meta[:, opt_idx], has_switch_to_option_factor)
                 add_logprob(logprobs, action, is_option_factor)
-                if step_idx < len(trajectory) - 1:
+                if step_idx < len(pptraj) - 1:
                     useless_next_switch = fb.useless_switch(opt_idx, step_idx + 1) * Config.useless_switch_factor
-                    next_step = trajectory[step_idx + 1]
+                    next_step = pptraj[step_idx + 1]
                     next_termination = option.termination(next_step.current_obs)
                     option_will_continue_factor = fb.option_will_continue_factor(opt_idx, step_idx)
                     option_will_terminate_factor = fb.option_will_terminate_factor(opt_idx, step_idx)

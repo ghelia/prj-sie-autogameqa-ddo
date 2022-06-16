@@ -31,9 +31,8 @@ class FeatureExtractor(torch.nn.Module):
 
 
 class PGMetaNetwork(torch.nn.Module):
-    def __init__(self, extractor: FeatureExtractor) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.extractor = extractor
         self.dense = Dense(
             [PGConfig.nfeatures] + PGConfig.hidden_layer + [Config.noptions],
             torch.nn.Tanh(),
@@ -41,14 +40,13 @@ class PGMetaNetwork(torch.nn.Module):
         )
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        outputs = self.dense(self.extractor(inputs))
+        outputs = self.dense(inputs)
         return outputs
 
 
 class PGPolicyNetwork(torch.nn.Module):
-    def __init__(self, extractor: FeatureExtractor) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.extractor = extractor
         self.dense = Dense(
             [PGConfig.nfeatures] + PGConfig.hidden_layer + [len(CONTROLS)],
             torch.nn.Tanh(),
@@ -56,14 +54,13 @@ class PGPolicyNetwork(torch.nn.Module):
         )
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        outputs = self.dense(self.extractor(inputs))
+        outputs = self.dense(inputs)
         return outputs
 
 
 class PGTerminationNetwork(torch.nn.Module):
-    def __init__(self, extractor: FeatureExtractor) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.extractor = extractor
         self.dense = Dense(
             [PGConfig.nfeatures] + PGConfig.hidden_layer + [1],
             torch.nn.Tanh(),
@@ -71,15 +68,18 @@ class PGTerminationNetwork(torch.nn.Module):
         )
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        outputs = self.dense(self.extractor(inputs)).reshape([-1])
+        outputs = self.dense(inputs).reshape([-1])
         return outputs
 
 
 class PGAgent(Agent):
     def __init__(self) -> None:
-        extractor = FeatureExtractor()
         super().__init__(
-            PGMetaNetwork(extractor),
-            [Option(PGPolicyNetwork(extractor), PGTerminationNetwork(extractor))
+            PGMetaNetwork(),
+            [Option(PGPolicyNetwork(), PGTerminationNetwork())
              for _ in range(Config.noptions)]
         )
+        self.extractor = FeatureExtractor()
+
+    def preprocess(self, obs: torch.Tensor) -> torch.Tensor:
+        return self.extractor(obs)

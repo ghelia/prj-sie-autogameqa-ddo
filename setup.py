@@ -20,6 +20,8 @@ if __name__ == '__main__':
             "tqdm",
             "mypy",
             "tensorboard==2.7.0",
-            "pytest"
+            "pytest",
+            "pandas",
+            "Pillow"
         ]
     )

@@ -22,6 +22,7 @@ if __name__ == '__main__':
             "tensorboard==2.7.0",
             "pytest",
             "pandas",
+            "torchvision",
             "Pillow"
         ]
     )

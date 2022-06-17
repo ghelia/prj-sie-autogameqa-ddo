@@ -16,21 +16,40 @@ python setup.py install
 ```
 
 
-## 学習
+## Pseudogameの環境
 
-`train.py`でモデルを学習する：
+
+### 学習
+
+`train_pg.py <datapath>`でモデルを学習する：
+
+```
+$> python train_pg.py data
+```
+
+`datapath`はエキスパートデータを含むフォルダである。
+モデルのcheckpointが`./saves/<datetime>/`の中に保存される。
+モデルのtensorboardのlogsが`./logs/<datetime>/`の中に保存される。`tensorboad --logdir ./logs`で見られる。
+
+
+## Taxiの環境
+
+
+### 学習
+
+`train_taxi.py`でモデルを学習する：
 
 ```
 $> python train.py
 ```
 
-モデルのCheckpointが`./saves/<datetime>/`の中に保存される。
-モデルのTensorboardのlogsが`./logs/<datetime>/`の中に保存される。`tensorboad --logdir ./logs`で見られる。
+モデルのcheckpointが`./saves/<datetime>/`の中に保存される。
+モデルのtensorboardのlogsが`./logs/<datetime>/`の中に保存される。`tensorboad --logdir ./logs`で見られる。
 
 
-## 動作確認
+### 動作確認
 
-`eval.py <checkpoint>`でモデルの動作を確認できる。
+`eval_taxi.py <checkpoint>`でモデルの動作を確認できる。
 
 ```
 $> python eval.py trained_checkpoints/option4.chkpt

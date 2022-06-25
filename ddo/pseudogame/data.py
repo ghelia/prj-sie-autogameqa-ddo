@@ -1,4 +1,5 @@
 import os
+import pathlib
 from typing import List, Tuple
 
 from PIL import Image
@@ -6,6 +7,7 @@ import numpy as np
 import pandas
 import torch
 import torchvision.transforms as transforms
+from tqdm import tqdm
 
 from ..utils import Env, Step, Agent
 from .config import PGConfig
@@ -29,14 +31,20 @@ class Trajectory:
     def __init__(self, dir_path: str, csv_path: str, transform: transforms.Compose) -> None:
         self.steps = []
         self.observations = []
+        print(csv_path)
         csv = pandas.read_csv(csv_path, delimiter=",")
         for idx in range(len(csv)):
             frame_path = csv.iloc[idx, 0]
             controls = csv.iloc[idx, 1:].tolist()
-            self.steps.append(PGStep(os.path.join(dir_path, frame_path), controls, transform))
+            self.steps.append(PGStep(self.get_path(dir_path, frame_path), controls, transform))
         for step in range(len(self.steps)):
             ob = self._obs(step)
             self.observations.append(ob)
+
+    def get_path(self, dir_path: str, frame_path: str) -> str:
+        frame_path = frame_path.replace("\\", "/")
+        fp = pathlib.Path(frame_path)
+        return os.path.join(dir_path, pathlib.Path(*fp.parts[1:]))
 
     def  obs(self, idx: int) -> Tuple[torch.Tensor, int]:
         return self.observations[idx]
@@ -63,10 +71,15 @@ class ExpertData(Env):
             transforms.ToTensor(),
             transforms.Resize(PGConfig.size)
         ])
-        for csv_path in csv_list:
+        for csv_path in tqdm(csv_list):
             dir_path = os.path.dirname(csv_path)
-            traj = Trajectory(dir_path, csv_path, self.transforms)
-            self.trajectories.append(traj)
+            try:
+                traj = Trajectory(dir_path, csv_path, self.transforms)
+                if len(traj.steps) > Config.nsteps:
+                    self.trajectories.append(traj)
+            except pandas.errors.EmptyDataError:
+                print(csv_path + " is empty")
+                pass
 
     def eval_agent(self, agent: Agent) -> float:
         # TODO add evaluation

@@ -10,5 +10,5 @@ class TaxiConfig:
     destination_offset = passenger_offset + ndestination
     ninputs = nrow + ncol + npassenger_pos + ndestination
     nactions = 6
-    hidden_layer = [32, 32]
+    hidden_layer = [32]
     init_std = 1.

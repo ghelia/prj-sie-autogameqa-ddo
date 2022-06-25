@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, NamedTuple, MutableMapping, Optional
+from typing import List, Tuple, NamedTuple, MutableMapping, Optional, Any
 
 import torch
 import numpy as np
@@ -95,3 +95,15 @@ class Env(torch.nn.Module):
     @abstractmethod
     def batch(self, batch_size: int) -> List[Step]:
         raise NotImplementedError
+
+
+class DDOData(torch.utils.data.Dataset):
+
+    def __init__(self, env: Env) -> None:
+        self.env = env
+
+    def __len__(self) -> int:
+        return Config.nsubepoch
+
+    def __getitem__(self, idx: int) -> Any:
+        return self.env.batch(Config.batch_size)

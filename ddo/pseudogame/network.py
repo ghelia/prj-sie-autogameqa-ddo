@@ -82,4 +82,5 @@ class PGAgent(Agent):
         self.extractor = FeatureExtractor()
 
     def preprocess(self, obs: torch.Tensor) -> torch.Tensor:
+        obs = obs.to(Config.device)
         return self.extractor(obs)

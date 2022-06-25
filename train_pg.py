@@ -25,4 +25,5 @@ if __name__ == "__main__":
     save_path = os.path.join("./saves", Config.session)
     data = ExpertData(csvs)
     agent = PGAgent()
+    agent.to(Config.device)
     ddo(agent, recorder, save_path, data)

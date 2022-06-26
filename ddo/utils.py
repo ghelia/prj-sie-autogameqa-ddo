@@ -93,10 +93,10 @@ class Env(torch.nn.Module):
 
     def eval_agent(self, agent: Agent, neval: int, nsteps: int) -> float:
         success = 0
-        agent.reset()
         print("eval")
         with torch.no_grad():
             for _ in tqdm(range(neval)):
+                agent.reset()
                 trajectory = self.eval_batch(1, nsteps)
                 for step in trajectory:
                     if step.current_action is None:
@@ -108,8 +108,8 @@ class Env(torch.nn.Module):
                         success += 1
         success_rate = success/(nsteps*neval)
         print("success : ", success_rate)
-        print("option selections : ", agent.option_tracker)
-        print("option changements : ", agent.option_change_tracker)
+        print("option selections during last eval : ", agent.option_tracker)
+        print("option changements during last eval : ", agent.option_change_tracker)
         return success_rate
 
     @abstractmethod

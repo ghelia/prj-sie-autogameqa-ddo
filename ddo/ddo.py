@@ -32,11 +32,10 @@ def ddo(agent: Agent, recorder: Recorder, save_path: str, env: Env) -> None:
             all_losses.append(loss.item())
             all_kl_losses.append(kl_loss.item())
             (loss + Config.kl_divergence_factor*kl_loss).backward()
+            optimizer.step()
             recorder.scalar(loss.item(), "loss")
             recorder.scalar(kl_loss.item(), "kl_loss")
             recorder.scalar(scheduler.get_last_lr()[0], "learning rate")
-        # NOTE used to be in the loop before
-        optimizer.step()
         print(f"Loss {np.mean(all_losses)}")
         print(f"KL Loss {np.mean(all_kl_losses)}")
         recorder.gradients_and_weights(agent)

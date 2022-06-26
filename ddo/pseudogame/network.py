@@ -38,6 +38,13 @@ class PGMetaNetwork(torch.nn.Module):
             torch.nn.Tanh(),
             torch.nn.Softmax(dim=1)
         )
+        self.apply(self._init_weights)
+
+    def _init_weights(self, module: torch.nn.Module) -> None:
+        if isinstance(module, torch.nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=PGConfig.init_std)
+            if module.bias is not None:
+                module.bias.data.normal_(mean=0.0, std=PGConfig.init_std)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         outputs = self.dense(inputs)

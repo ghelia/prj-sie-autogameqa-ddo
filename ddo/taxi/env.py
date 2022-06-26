@@ -102,7 +102,7 @@ class TaxiEnv(Env):
         return self._tensor(self.taxi_row, self.taxi_col, self.passenger_index, self.destination_index)
 
     def _tensor(self, row: int, col: int, passenger: int, destination: int) -> torch.Tensor:
-        inputs = torch.zeros([TaxiConfig.ninputs])
+        inputs = torch.zeros([TaxiConfig.ninputs], device=Config.device)
         inputs[TaxiConfig.row_offset + row] = 1.
         inputs[TaxiConfig.col_offset + col] = 1.
         inputs[TaxiConfig.passenger_offset + passenger] = 1.
@@ -123,35 +123,14 @@ class TaxiEnv(Env):
         if done:
             self.reset()
 
-    def eval_agent(self, agent: Agent) -> float:
-        assert isinstance(agent, TaxiAgent)
-        self.reset()
-        agent.reset()
-        success = 0
-        L = 1000
-        for s in range(L):
-            expert_action = self.expert.action(self)
-            obs = self.tensor().reshape([1, -1])
-            agent_action = agent.action(obs, greedy=True)
-            self.step(expert_action)
-            if expert_action == agent_action:
-                success += 1
-        success_rate = success/L
-        print("success : ", success_rate)
-        print("option selections : ", agent.option_tracker)
-        print("option changements : ", agent.option_change_tracker)
-        self.reset()
-        agent.reset()
-        return success_rate
 
-
-    def batch(self, batch_size: int) -> List[Step]:
+    def batch(self, batch_size: int, nsteps: int) -> List[Step]:
         all_obs = []
         all_actions = []
         for bi in range(batch_size):
             obs = []
             actions = []
-            for s in range(Config.nsteps):
+            for s in range(nsteps):
                 obs.append(self.tensor())
                 action = self.expert.action(self)
                 self.step(action)
@@ -159,13 +138,16 @@ class TaxiEnv(Env):
             all_obs.append(obs)
             all_actions.append(actions)
         trajectory = []
-        for s in range(Config.nsteps):
+        for s in range(nsteps):
             step = Step(
                 torch.stack([obs[s] for obs in all_obs]),
                 torch.tensor([actions[s] for actions in all_actions], device=Config.device).long(),
             )
             trajectory.append(step)
         return trajectory
+
+    def eval_batch(self, batch_size: int, nsteps: int) -> List[Step]:
+        return self.batch(batch_size, nsteps)
 
 
 class Expert:

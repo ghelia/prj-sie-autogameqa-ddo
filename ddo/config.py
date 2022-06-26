@@ -7,19 +7,22 @@ class Config:
     learning_rate = 0.00001
     learning_rate_decay = 0.995
     batch_size = 1
-    nsteps = 4
+    nsteps = 10
     noptions = 4
     nepoch = 100000
-    nsubepoch = 100
+    nsubepoch = 10
     epsilon = 1e-12
+    neval = 1
+    eval_nsteps = 100
 
     useless_switch_factor = 0.15
     kl_divergence_factor = 0. # 0.001
 
     dtype = torch.float32
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    else:
-        device = torch.device("cpu")
+    # if torch.cuda.is_available():
+    #     device = torch.device("cuda")
+    # else:
+    #     device = torch.device("cpu")
+    device = torch.device("cpu")
 
     session = datetime.now().strftime(f"KL{kl_divergence_factor}_%m_%d_%Y, %H:%M:%S")

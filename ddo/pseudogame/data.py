@@ -51,13 +51,22 @@ class PGStep:
 
 
 class Trajectory:
-    def __init__(self, dir_path: str, csv_path: str, transform: transforms.Compose) -> None:
+    def __init__(self, dir_path: str, csv_path: str, transform: transforms.Compose, ) -> None:
         self.steps = []
         csv = pandas.read_csv(csv_path, delimiter=",")
+        # NOTE current_frame, current_action
+        # for idx in range(len(csv)):
+        #     frame_path = csv.iloc[idx, 0]
+        #     controls = csv.iloc[idx, 1:].tolist()
+        #     self.steps.append(PGStep(self.get_path(dir_path, frame_path), controls, transform))
+
+        # NOTE current_frame, previous_action
+        frame_path = None
         for idx in range(len(csv)):
-            frame_path = csv.iloc[idx, 0]
             controls = csv.iloc[idx, 1:].tolist()
-            self.steps.append(PGStep(self.get_path(dir_path, frame_path), controls, transform))
+            if frame_path is not None:
+                self.steps.append(PGStep(self.get_path(dir_path, frame_path), controls, transform))
+            frame_path = csv.iloc[idx, 0]
 
     def get_path(self, dir_path: str, frame_path: str) -> str:
         frame_path = frame_path.replace("\\", "/")
@@ -79,43 +88,50 @@ class Trajectory:
 
 
 class ExpertData(Env):
-    def __init__(self, csv_list: List[str]) -> None:
-        self.trajectories = []
+    def __init__(self, csv_list: List[str], eval_csv_list: List[str]) -> None:
         self.transforms = transforms.Compose([
             transforms.ToTensor(),
             transforms.Resize(PGConfig.size)
         ])
+        self.trajectories = self.get_trajectories(csv_list, Config.nsteps)
+        self.eval_trajectories = self.get_trajectories(eval_csv_list, Config.eval_nsteps)
+        print("Number actions : ", len(CONTROLS))
+
+    def get_trajectories(self, csv_list: List[str], min_steps: int) -> List[Trajectory]:
+        trajectories = []
         for csv_path in tqdm(csv_list):
             dir_path = os.path.dirname(csv_path)
             try:
                 traj = Trajectory(dir_path, csv_path, self.transforms)
-                if len(traj.steps) > Config.nsteps:
-                    self.trajectories.append(traj)
+                if len(traj.steps) > min_steps:
+                    trajectories.append(traj)
             except pandas.errors.EmptyDataError:
                 print(csv_path + " is empty")
                 pass
-        print("Number actions : ", len(CONTROLS))
+        return trajectories
 
-    def eval_agent(self, agent: Agent) -> float:
-        # TODO add evaluation
-        return 0.
+    def batch(self, batch_size: int, nsteps: int) -> List[Step]:
+        return self._batch(self.trajectories, batch_size, nsteps)
 
-    def batch(self, batch_size: int) -> List[Step]:
+    def eval_batch(self, batch_size: int, nsteps: int) -> List[Step]:
+        return self._batch(self.eval_trajectories, batch_size, nsteps)
+
+    def _batch(self, trajectories: List[Trajectory], batch_size: int, nsteps: int) -> List[Step]:
         all_obs = []
         all_actions = []
         for bi in range(batch_size):
             obs = []
             actions = []
-            traj = self.trajectories[np.random.randint(len(self.trajectories))]
-            start = np.random.randint(len(traj.steps) - Config.nsteps)
-            for s in range(Config.nsteps):
+            traj = trajectories[np.random.randint(len(trajectories))]
+            start = np.random.randint(len(traj.steps) - nsteps)
+            for s in range(nsteps):
                 o, a = traj.obs(start + s)
                 obs.append(o)
                 actions.append(a)
             all_obs.append(obs)
             all_actions.append(actions)
         batch = []
-        for s in range(Config.nsteps):
+        for s in range(nsteps):
             step = Step(
                 torch.stack([obs[s] for obs in all_obs]),
                 torch.tensor([actions[s] for actions in all_actions], device=Config.device).long(),

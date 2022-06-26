@@ -3,6 +3,7 @@ from typing import List, Tuple, NamedTuple, MutableMapping, Optional, Any
 
 import torch
 import numpy as np
+from tqdm import tqdm
 
 from .config import Config
 
@@ -89,11 +90,34 @@ class Agent(torch.nn.Module):
 
 
 class Env(torch.nn.Module):
+
+    def eval_agent(self, agent: Agent, neval: int, nsteps: int) -> float:
+        success = 0
+        agent.reset()
+        print("eval")
+        with torch.no_grad():
+            for _ in tqdm(range(neval)):
+                trajectory = self.eval_batch(1, nsteps)
+                for step in trajectory:
+                    if step.current_action is None:
+                        continue
+                    expert_action = step.current_action.item()
+                    obs = step.current_obs
+                    agent_action = agent.action(obs, greedy=True)
+                    if expert_action == agent_action:
+                        success += 1
+        success_rate = success/(nsteps*neval)
+        print("success : ", success_rate)
+        print("option selections : ", agent.option_tracker)
+        print("option changements : ", agent.option_change_tracker)
+        return success_rate
+
     @abstractmethod
-    def eval_agent(self, agent: Agent) -> float:
+    def batch(self, batch_size: int, nsteps: int) -> List[Step]:
         raise NotImplementedError
+
     @abstractmethod
-    def batch(self, batch_size: int) -> List[Step]:
+    def eval_batch(self, batch_size: int, nsteps: int) -> List[Step]:
         raise NotImplementedError
 
 

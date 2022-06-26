@@ -4,7 +4,7 @@ from datetime import datetime
 
 class Config:
 
-    learning_rate = 0.00001
+    learning_rate = 0.0001
     learning_rate_decay = 0.995
     batch_size = 1
     nsteps = 10

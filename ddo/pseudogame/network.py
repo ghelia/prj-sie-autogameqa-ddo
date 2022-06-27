@@ -1,7 +1,6 @@
 import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
-from ddo.pseudogame.data import ExpertData, CONTROLS
 from ddo.pseudogame.config import PGConfig
 from ddo.utils import Agent, Option
 from ddo.config import Config
@@ -16,13 +15,19 @@ class FeatureExtractor(torch.nn.Module):
         self.spatial_extractor = models.mobilenet_v2(pretrained=True)
         self.move_extractor = models.mobilenet_v2(pretrained=True)
 
-    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        spatial_inputs = inputs[:,-1]
-        move_inputs = torch.stack([
+    def spatial(self, inputs: torch.Tensor) -> torch.Tensor:
+        return inputs[:,-1]
+
+    def temporal(self, inputs: torch.Tensor) -> torch.Tensor:
+        return torch.stack([
             inputs[:,0,0],
             inputs[:,1,1],
             inputs[:,2,2]
         ], dim=1)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        spatial_inputs = self.spatial(inputs)
+        move_inputs = self.temporal(inputs)
         # TODO torchvision Normalize
         return torch.cat([
             self.spatial_extractor(spatial_inputs),
@@ -107,3 +112,5 @@ class PGAgent(Agent):
         with torch.no_grad():
             features = self.extractor(obs)
         return features
+
+from ddo.pseudogame.data import CONTROLS

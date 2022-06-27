@@ -27,7 +27,8 @@ def ddo(agent: Agent, recorder: Recorder, save_path: str, env: Env) -> None:
         for e in tqdm(range(Config.nsubepoch)):
             optimizer.zero_grad()
             trajectory = env.batch(Config.batch_size, Config.nsteps)
-
+            if e == 0:
+                env.record(trajectory, recorder, agent)
             loss, kl_loss = loss_func(trajectory, agent)
             all_losses.append(loss.item())
             all_kl_losses.append(kl_loss.item())

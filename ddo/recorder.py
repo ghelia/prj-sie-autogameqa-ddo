@@ -16,6 +16,7 @@ class Recorder:
         self.writer = SummaryWriter(tb_path)
         self.scalars: MutableMapping[str, List[float]] = dict()
         self.hists: MutableMapping[str, List[float]] = dict()
+        self.imgs: MutableMapping[str, torch.Tensor] = dict()
         self.epoch = 0
 
     def scalar(self, value: float, label: str) -> None:
@@ -65,5 +66,10 @@ class Recorder:
             self.writer.add_scalar(label, np.mean(scalar), self.epoch)
         for label, hist in self.hists.items():
             self.writer.add_histogram(label, np.array(hist), self.epoch)
+        for label, img in self.imgs.items():
+            self.writer.add_image(label, img, self.epoch)
         self.scalars = dict()
         self.hists = dict()
+
+    def image(self, img: torch.Tensor, label: str) -> None:
+        self.imgs[label] = img

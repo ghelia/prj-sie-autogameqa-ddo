@@ -6,6 +6,7 @@ import numpy as np
 from tqdm import tqdm
 
 from .config import Config
+from .recorder import Recorder
 
 
 class Step(NamedTuple):
@@ -90,6 +91,9 @@ class Agent(torch.nn.Module):
 
 
 class Env(torch.nn.Module):
+
+    def record(self, trajectory: List[Step], recorder: Recorder, agent: Agent) -> None:
+        pass
 
     def eval_agent(self, agent: Agent, neval: int, nsteps: int) -> float:
         success = 0

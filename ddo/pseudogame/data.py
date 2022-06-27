@@ -10,7 +10,9 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 
 from ..utils import Env, Step, Agent
+from ..recorder import Recorder
 from .config import PGConfig
+from .network import PGAgent
 from ..config import Config
 
 
@@ -51,7 +53,7 @@ class PGStep:
 
 
 class Trajectory:
-    def __init__(self, dir_path: str, csv_path: str, transform: transforms.Compose, ) -> None:
+    def __init__(self, img_dir: str, csv_path: str, transform: transforms.Compose, ) -> None:
         self.steps = []
         csv = pandas.read_csv(csv_path, delimiter=",")
         # NOTE current_frame, current_action
@@ -65,13 +67,14 @@ class Trajectory:
         for idx in range(len(csv)):
             controls = csv.iloc[idx, 1:].tolist()
             if frame_path is not None:
-                self.steps.append(PGStep(self.get_path(dir_path, frame_path), controls, transform))
+                self.steps.append(PGStep(self.get_path(img_dir, frame_path), controls, transform))
             frame_path = csv.iloc[idx, 0]
 
-    def get_path(self, dir_path: str, frame_path: str) -> str:
+    def get_path(self, img_dir: str, frame_path: str) -> str:
         frame_path = frame_path.replace("\\", "/")
-        fp = pathlib.Path(frame_path)
-        return os.path.join(dir_path, pathlib.Path(*fp.parts[1:]))
+        # fp = pathlib.Path(frame_path)
+        # return os.path.join(dir_path, pathlib.Path(*fp.parts[1:]))
+        return os.path.join(img_dir, frame_path)
 
     def  obs(self, idx: int) -> Tuple[torch.Tensor, int]:
         action = self.steps[idx].action
@@ -88,21 +91,34 @@ class Trajectory:
 
 
 class ExpertData(Env):
-    def __init__(self, csv_list: List[str], eval_csv_list: List[str]) -> None:
+
+    def record(self, trajectory: List[Step], recorder: Recorder, agent: Agent) -> None:
+        assert isinstance(agent, PGAgent)
+        r = np.random.randint(len(trajectory))
+        with torch.no_grad():
+            recorder.image(
+                agent.extractor.spatial(trajectory[r].current_obs)[0],
+                "spatial"
+            )
+            recorder.image(
+                agent.extractor.temporal(trajectory[r].current_obs)[0],
+                "temporal"
+            )
+
+    def __init__(self, img_dir: str, csv_list: List[str], eval_csv_list: List[str]) -> None:
         self.transforms = transforms.Compose([
             transforms.ToTensor(),
             transforms.Resize(PGConfig.size)
         ])
-        self.trajectories = self.get_trajectories(csv_list, Config.nsteps)
-        self.eval_trajectories = self.get_trajectories(eval_csv_list, Config.eval_nsteps)
+        self.trajectories = self.get_trajectories(img_dir, csv_list, Config.nsteps)
+        self.eval_trajectories = self.get_trajectories(img_dir, eval_csv_list, Config.eval_nsteps)
         print("Number actions : ", len(CONTROLS))
 
-    def get_trajectories(self, csv_list: List[str], min_steps: int) -> List[Trajectory]:
+    def get_trajectories(self, img_dir: str, csv_list: List[str], min_steps: int) -> List[Trajectory]:
         trajectories = []
         for csv_path in tqdm(csv_list):
-            dir_path = os.path.dirname(csv_path)
             try:
-                traj = Trajectory(dir_path, csv_path, self.transforms)
+                traj = Trajectory(img_dir, csv_path, self.transforms)
                 if len(traj.steps) > min_steps:
                     trajectories.append(traj)
             except pandas.errors.EmptyDataError:

@@ -79,7 +79,7 @@ class DebugPolicyNetwork(TaxiNetworkBase):
         super().__init__()
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        outputs = torch.zeros([Config.batch_size, TaxiConfig.nactions])
+        outputs = torch.zeros([Config.batch_size, TaxiConfig.nactions], device=Config.device)
         outputs[:,self.index] = 10.
         return outputs.softmax(1)
 

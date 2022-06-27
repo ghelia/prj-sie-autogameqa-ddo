@@ -19,6 +19,7 @@ class ForwardBackward:
         if key in self.forward_option_prob_tracker:
             return self.forward_option_prob_tracker[key]
         prob = self._forward_option_prob(option_idx, step)
+        prob = prob.detach()
         self.forward_option_prob_tracker[key] = prob
         return prob
 
@@ -30,8 +31,8 @@ class ForwardBackward:
         previous_action = self.trajectory[step - 1].current_action
 
         switch_to_option_prob = self.agent.meta(current_obs)[:, option_idx]
-        any_switch_prob = torch.zeros([Config.batch_size])
-        stay_to_option_prob = torch.zeros([Config.batch_size])
+        any_switch_prob = torch.zeros([Config.batch_size], device=Config.device)
+        stay_to_option_prob = torch.zeros([Config.batch_size], device=Config.device)
         for idx, option in enumerate(self.agent.options):
             previous_option_prob = self.forward_option_prob(idx, step - 1)
             action_prob = option.policy(previous_obs)[torch.arange(Config.batch_size), previous_action]
@@ -46,6 +47,7 @@ class ForwardBackward:
         if key in self.backward_option_prob_tracker:
             return self.backward_option_prob_tracker[key]
         prob = self._backward_option_prob(option_idx, step)
+        prob = prob.detach()
         self.backward_option_prob_tracker[key] = prob
         return prob
 
@@ -59,7 +61,7 @@ class ForwardBackward:
         next_obs = self.trajectory[step + 1].current_obs
         next_termination_prob = option.termination(next_obs)
         continue_same_option_prob = self.backward_option_prob(option_idx, step + 1)
-        change_option_prob = torch.zeros([Config.batch_size])
+        change_option_prob = torch.zeros([Config.batch_size], device=Config.device)
         for idx, next_option in enumerate(self.agent.options):
             next_option_prob = self.agent.meta(next_obs)[:, idx]
             backward_prob = self.backward_option_prob(idx, step + 1)
@@ -75,7 +77,7 @@ class ForwardBackward:
 
     def is_option_factor(self, option_idx: int, step: int) -> torch.Tensor:
         with torch.no_grad():
-            return self.option_prob(option_idx, step) / self.step_prob(step)
+            return (self.option_prob(option_idx, step) / self.step_prob(step))
 
     def has_switch_to_option_factor(self, option_idx: int, step: int) -> torch.Tensor:
         with torch.no_grad():
@@ -115,9 +117,10 @@ class ForwardBackward:
 
     def option_will_terminate_factor(self, option_idx: int, step: int) -> torch.Tensor:
         with torch.no_grad():
-            return self.is_option_factor(option_idx, step) - self.option_will_continue_factor(option_idx, step)
+            return (self.is_option_factor(option_idx, step) - self.option_will_continue_factor(option_idx, step))
 
     def useless_switch(self, option_idx: int, step: int) -> torch.Tensor:
-        is_option_factor = self.is_option_factor(option_idx, step - 1)
-        useless_switch = is_option_factor * self.has_switch_to_option_factor(option_idx, step)
-        return useless_switch
+        with torch.no_grad():
+            is_option_factor = self.is_option_factor(option_idx, step - 1)
+            useless_switch = is_option_factor * self.has_switch_to_option_factor(option_idx, step)
+            return useless_switch

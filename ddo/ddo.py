@@ -23,9 +23,10 @@ def ddo(agent: Agent, recorder: Recorder, save_path: str, env: Env) -> None:
         print(f"Epoch {E}")
         all_losses = []
         all_kl_losses = []
+        print("train")
         for e in tqdm(range(Config.nsubepoch)):
             optimizer.zero_grad()
-            trajectory = env.batch(Config.batch_size)
+            trajectory = env.batch(Config.batch_size, Config.nsteps)
 
             loss, kl_loss = loss_func(trajectory, agent)
             all_losses.append(loss.item())
@@ -38,7 +39,7 @@ def ddo(agent: Agent, recorder: Recorder, save_path: str, env: Env) -> None:
         print(f"Loss {np.mean(all_losses)}")
         print(f"KL Loss {np.mean(all_kl_losses)}")
         recorder.gradients_and_weights(agent)
-        success_rate = env.eval_agent(agent)
+        success_rate = env.eval_agent(agent, Config.neval, Config.eval_nsteps)
         recorder.scalar(success_rate, "evaluation")
         scheduler.step()
         recorder.end_epoch()

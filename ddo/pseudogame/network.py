@@ -38,6 +38,13 @@ class PGMetaNetwork(torch.nn.Module):
             torch.nn.Tanh(),
             torch.nn.Softmax(dim=1)
         )
+        # self.apply(self._init_weights)
+
+    def _init_weights(self, module: torch.nn.Module) -> None:
+        if isinstance(module, torch.nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=PGConfig.init_std)
+            if module.bias is not None:
+                module.bias.data.normal_(mean=0.0, std=PGConfig.init_std)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         outputs = self.dense(inputs)
@@ -52,6 +59,13 @@ class PGPolicyNetwork(torch.nn.Module):
             torch.nn.Tanh(),
             torch.nn.Softmax(dim=1)
         )
+        # self.apply(self._init_weights)
+
+    def _init_weights(self, module: torch.nn.Module) -> None:
+        if isinstance(module, torch.nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=PGConfig.init_std)
+            if module.bias is not None:
+                module.bias.data.normal_(mean=0.0, std=PGConfig.init_std)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         outputs = self.dense(inputs)
@@ -66,6 +80,13 @@ class PGTerminationNetwork(torch.nn.Module):
             torch.nn.Tanh(),
             torch.nn.Sigmoid()
         )
+        # self.apply(self._init_weights)
+
+    def _init_weights(self, module: torch.nn.Module) -> None:
+        if isinstance(module, torch.nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=PGConfig.init_std)
+            if module.bias is not None:
+                module.bias.data.normal_(mean=0.0, std=PGConfig.init_std)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         outputs = self.dense(inputs).reshape([-1])
@@ -82,4 +103,7 @@ class PGAgent(Agent):
         self.extractor = FeatureExtractor()
 
     def preprocess(self, obs: torch.Tensor) -> torch.Tensor:
-        return self.extractor(obs)
+        obs = obs.to(Config.device)
+        with torch.no_grad():
+            features = self.extractor(obs)
+        return features

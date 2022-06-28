@@ -2,11 +2,14 @@ from typing import List
 import os
 import argparse
 
+import numpy as np
+
 from ddo.ddo import ddo
 from ddo.config import Config
 from ddo.recorder import Recorder
 from ddo.pseudogame.network import PGAgent
 from ddo.pseudogame.data import ExpertData
+from ddo.pseudogame.controls import CONTROLS
 
 
 def get_csvs(path: str) -> List[str]:
@@ -17,6 +20,11 @@ def get_csvs(path: str) -> List[str]:
                 csvs.append(os.path.join(root, file))
     return csvs
 
+
+def save_controls(save_path: str) -> None:
+    print("controls : ", CONTROLS)
+    arr = np.array(CONTROLS)
+    np.save(os.path.join(save_path, "controls.npy"), arr)
 
 
 if __name__ == "__main__":
@@ -34,6 +42,7 @@ if __name__ == "__main__":
     recorder = Recorder(os.path.join("./logs", Config.session))
     save_path = os.path.join("./saves", Config.session)
     data = ExpertData(args.imgs, csvs, eval_csvs)
-    agent = PGAgent()
+    save_controls(save_path)
+    agent = PGAgent(len(CONTROLS))
     agent.to(Config.device)
     ddo(agent, recorder, save_path, data)

@@ -1,11 +1,12 @@
+import numpy as np
 import torch
 import torchvision.models as models
 import torchvision.transforms as transforms
+
 from ddo.pseudogame.config import PGConfig
 from ddo.utils import Agent, Option
 from ddo.config import Config
 from ddo.network import Dense
-
 
 
 class FeatureExtractor(torch.nn.Module):
@@ -57,10 +58,10 @@ class PGMetaNetwork(torch.nn.Module):
 
 
 class PGPolicyNetwork(torch.nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, nactions: int) -> None:
         super().__init__()
         self.dense = Dense(
-            [PGConfig.nfeatures] + PGConfig.hidden_layer + [len(CONTROLS)],
+            [PGConfig.nfeatures] + PGConfig.hidden_layer + [nactions],
             torch.nn.Tanh(),
             torch.nn.Softmax(dim=1)
         )
@@ -99,10 +100,10 @@ class PGTerminationNetwork(torch.nn.Module):
 
 
 class PGAgent(Agent):
-    def __init__(self) -> None:
+    def __init__(self, nactions: int) -> None:
         super().__init__(
             PGMetaNetwork(),
-            [Option(PGPolicyNetwork(), PGTerminationNetwork())
+            [Option(PGPolicyNetwork(nactions), PGTerminationNetwork())
              for _ in range(Config.noptions)]
         )
         self.extractor = FeatureExtractor()
@@ -113,4 +114,3 @@ class PGAgent(Agent):
             features = self.extractor(obs)
         return features
 
-from ddo.pseudogame.data import CONTROLS

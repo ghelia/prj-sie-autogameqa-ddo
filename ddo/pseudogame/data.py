@@ -8,15 +8,13 @@ import pandas
 import torch
 import torchvision.transforms as transforms
 from tqdm import tqdm
+from ddo.pseudogame.controls import CONTROLS
 
 from ..utils import Env, Step, Agent
 from ..recorder import Recorder
 from .config import PGConfig
 from .network import PGAgent
 from ..config import Config
-
-
-CONTROLS: List[List[int]] = []
 
 
 class PGStep:
@@ -89,8 +87,18 @@ class Trajectory:
             action
         )
 
+TRANSFORMS = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Resize(PGConfig.size)
+])
 
 class ExpertData(Env):
+
+    def __init__(self, img_dir: str, csv_list: List[str], eval_csv_list: List[str]) -> None:
+        self.transforms = TRANSFORMS
+        self.trajectories = self.get_trajectories(img_dir, csv_list, Config.nsteps)
+        self.eval_trajectories = self.get_trajectories(img_dir, eval_csv_list, Config.eval_nsteps)
+        print("Number actions : ", len(CONTROLS))
 
     def record(self, trajectory: List[Step], recorder: Recorder, agent: Agent) -> None:
         assert isinstance(agent, PGAgent)
@@ -104,15 +112,6 @@ class ExpertData(Env):
                 agent.extractor.temporal(trajectory[r].current_obs)[0],
                 "temporal"
             )
-
-    def __init__(self, img_dir: str, csv_list: List[str], eval_csv_list: List[str]) -> None:
-        self.transforms = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Resize(PGConfig.size)
-        ])
-        self.trajectories = self.get_trajectories(img_dir, csv_list, Config.nsteps)
-        self.eval_trajectories = self.get_trajectories(img_dir, eval_csv_list, Config.eval_nsteps)
-        print("Number actions : ", len(CONTROLS))
 
     def get_trajectories(self, img_dir: str, csv_list: List[str], min_steps: int) -> List[Trajectory]:
         trajectories = []

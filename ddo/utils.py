@@ -12,6 +12,7 @@ from .recorder import Recorder
 class Step(NamedTuple):
     current_obs: torch.Tensor
     current_action: Optional[torch.Tensor]
+    weight: torch.Tensor
 
 
 class Option(torch.nn.Module):

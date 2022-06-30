@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from PIL import Image
 import numpy as np
@@ -17,16 +17,22 @@ from ..config import Config
 
 
 CONTROLS: List[List[int]] = []
+CONTROLS_COUNT: Dict[str, int] = {}
+TOTAL_STEPS = 0
 
 
 class PGStep:
     def __init__(self, frame_path: str, controls: List[int], transform: transforms.Compose, save_npy: bool = True, force: bool = False) -> None:
+        global TOTAL_STEPS
         self.transform = transform
         self.frame_path = frame_path
         self.controls = controls
+        TOTAL_STEPS += 1
         if controls not in CONTROLS:
             CONTROLS.append(controls)
+            CONTROLS_COUNT[str(controls)] = 0
         self.action = CONTROLS.index(controls)
+        CONTROLS_COUNT[str(controls)] += 1
         if save_npy:
             self.save_frame_npy(force)
 
@@ -76,7 +82,13 @@ class Trajectory:
         # return os.path.join(dir_path, pathlib.Path(*fp.parts[1:]))
         return os.path.join(img_dir, frame_path)
 
-    def  obs(self, idx: int) -> Tuple[torch.Tensor, int]:
+    def weight(self, action: int) -> float:
+        freq = CONTROLS_COUNT[str(CONTROLS[action])] / TOTAL_STEPS
+        if freq > 0.001:
+            return 1. - freq
+        return 0.
+
+    def obs(self, idx: int) -> Tuple[torch.Tensor, int, float]:
         action = self.steps[idx].action
         frames = []
         for i  in PGConfig.frame_obs_idx:
@@ -86,7 +98,8 @@ class Trajectory:
             frames.append(self.steps[fi].frame())
         return (
             torch.stack(frames),
-            action
+            action,
+            self.weight(action)
         )
 
 
@@ -113,6 +126,8 @@ class ExpertData(Env):
         self.trajectories = self.get_trajectories(img_dir, csv_list, Config.nsteps)
         self.eval_trajectories = self.get_trajectories(img_dir, eval_csv_list, Config.eval_nsteps)
         print("Number actions : ", len(CONTROLS))
+        for key,count in CONTROLS_COUNT.items():
+            print(f"{key} : {count/TOTAL_STEPS}")
 
     def get_trajectories(self, img_dir: str, csv_list: List[str], min_steps: int) -> List[Trajectory]:
         trajectories = []
@@ -135,22 +150,27 @@ class ExpertData(Env):
     def _batch(self, trajectories: List[Trajectory], batch_size: int, nsteps: int) -> List[Step]:
         all_obs = []
         all_actions = []
+        all_weights = []
         for bi in range(batch_size):
             obs = []
             actions = []
+            weights = []
             traj = trajectories[np.random.randint(len(trajectories))]
             start = np.random.randint(len(traj.steps) - nsteps)
             for s in range(nsteps):
-                o, a = traj.obs(start + s)
+                o, a, w = traj.obs(start + s)
                 obs.append(o)
                 actions.append(a)
+                weights.append(w)
             all_obs.append(obs)
             all_actions.append(actions)
+            all_weights.append(weights)
         batch = []
         for s in range(nsteps):
             step = Step(
                 torch.stack([obs[s] for obs in all_obs]),
                 torch.tensor([actions[s] for actions in all_actions], device=Config.device).long(),
+                torch.tensor([weights[s] for weights in all_weights], device=Config.device)
             )
             batch.append(step)
         return batch

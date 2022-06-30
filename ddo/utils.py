@@ -102,8 +102,9 @@ class Env(torch.nn.Module):
     def record(self, trajectory: List[Step], recorder: Recorder, agent: Agent) -> None:
         pass
 
-    def eval_agent(self, agent: Agent, neval: int, nsteps: int) -> float:
+    def eval_agent(self, agent: Agent, neval: int, nsteps: int, recorder: Recorder) -> float:
         success = 0
+        success_by_actions = {}
         print("eval")
         agent.reset()
         with torch.no_grad():
@@ -116,7 +117,11 @@ class Env(torch.nn.Module):
                     expert_action = step.current_action.item()
                     obs = step.current_obs
                     agent_action = agent.action(obs, greedy=True)
+                    if expert_action not in success_by_actions:
+                        success_by_actions[expert_action] = [0,0]
+                    success_by_actions[expert_action][1] += 1
                     if expert_action == agent_action:
+                        success_by_actions[expert_action][0] += 1
                         success += 1
         success_rate = success/(nsteps*neval)
         print("success : ", success_rate)
@@ -124,6 +129,11 @@ class Env(torch.nn.Module):
         print("action selections : ", agent.action_tracker)
         print("option selections : ", agent.option_tracker)
         print("option changements : ", agent.option_change_tracker)
+        print("success by actions")
+        for key, (action_success, action_total) in success_by_actions.items():
+            percent = action_success/action_total
+            print(f"{key} : {percent} {action_success}/{action_total}")
+            recorder.scalar(percent, f"action {key} imitation success")
         agent.reset()
         return success_rate
 

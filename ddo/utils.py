@@ -30,14 +30,17 @@ class Agent(torch.nn.Module):
         self.current_option = -1
         self.option_tracker = [0 for _ in range(Config.noptions)]
         self.option_change_tracker = [0 for _ in range(Config.noptions)]
+        self.action_tracker = {}
         self.action_prob = 0.
         self.termination_prob = 0.
         self.meta_prob = 0.
 
-    def reset(self) -> None:
+    def reset(self, reset_tracker: bool = True) -> None:
         self.current_option = -1
-        self.option_tracker = [0 for _ in range(Config.noptions)]
-        self.option_change_tracker = [0 for _ in range(Config.noptions)]
+        if reset_tracker:
+            self.action_tracker = {}
+            self.option_tracker = [0 for _ in range(Config.noptions)]
+            self.option_change_tracker = [0 for _ in range(Config.noptions)]
 
     def preprocess(self, obs: torch.Tensor) -> torch.Tensor:
         return obs
@@ -80,6 +83,9 @@ class Agent(torch.nn.Module):
             action = selection_distribution.sample()[0].int().item()
 
         self.action_prob = option.policy(obs)[0][action]
+        if action not in self.action_tracker:
+            self.action_tracker[action] = 0
+        self.action_tracker[action] += 1
         return action
 
     def all_probs(self, obs: torch.Tensor) -> torch.Tensor:
@@ -98,9 +104,10 @@ class Env(torch.nn.Module):
     def eval_agent(self, agent: Agent, neval: int, nsteps: int) -> float:
         success = 0
         print("eval")
+        agent.reset()
         with torch.no_grad():
             for _ in tqdm(range(neval)):
-                agent.reset()
+                agent.reset(reset_tracker=False)
                 trajectory = self.eval_batch(1, nsteps)
                 for step in trajectory:
                     if step.current_action is None:
@@ -112,8 +119,11 @@ class Env(torch.nn.Module):
                         success += 1
         success_rate = success/(nsteps*neval)
         print("success : ", success_rate)
-        print("option selections during last eval : ", agent.option_tracker)
-        print("option changements during last eval : ", agent.option_change_tracker)
+        print("total steps : ", (nsteps*neval))
+        print("action selections : ", agent.action_tracker)
+        print("option selections : ", agent.option_tracker)
+        print("option changements : ", agent.option_change_tracker)
+        agent.reset()
         return success_rate
 
     @abstractmethod

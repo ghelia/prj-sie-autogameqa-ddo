@@ -4,15 +4,15 @@ from datetime import datetime
 
 class Config:
 
-    learning_rate = 0.00001
+    learning_rate = 0.000015
     learning_rate_decay = 0.995
-    batch_size = 20
-    nsteps = 30
+    batch_size = 40
+    nsteps = 10
     noptions = 4
     nepoch = 100000
-    nsubepoch = 10
+    nsubepoch = 5
     epsilon = 1e-12
-    neval = 5
+    neval = 10
     eval_nsteps = 100
 
     useless_switch_factor = 0.15
@@ -25,4 +25,4 @@ class Config:
         device = torch.device("cpu")
     # device = torch.device("cpu")
 
-    session = datetime.now().strftime(f"KL{kl_divergence_factor}_%m_%d_%Y, %H:%M:%S")
+    session = datetime.now().strftime(f"%m_%d_%Y, %H:%M:%S_KL{kl_divergence_factor}_BS{batch_size}_nsteps{nsteps}_noptions{noptions}_usf{useless_switch_factor}")

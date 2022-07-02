@@ -82,9 +82,13 @@ class Trajectory:
         # return os.path.join(dir_path, pathlib.Path(*fp.parts[1:]))
         return os.path.join(img_dir, frame_path)
 
-    def weight(self, action: int) -> float:
+    def frequency(self, action: int) -> float:
         freq = CONTROLS_COUNT[str(CONTROLS[action])] / TOTAL_STEPS
-        if freq > 0.001:
+        return freq
+
+    def weight(self, action: int) -> float:
+        freq = self.frequency(action)
+        if freq > PGConfig.min_frequency:
             return 1. - freq
         return 0.
 
@@ -175,3 +179,26 @@ class ExpertData(Env):
             batch.append(step)
         return batch
 
+    def classifier_batch(self, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        all_obs = []
+        all_actions = []
+        action2step: Dict[int, List[Tuple[Trajectory, int]]] = {}
+        for trajectory in self.trajectories:
+            for step_idx, step in enumerate(trajectory.steps):
+                if trajectory.frequency(step.action) > PGConfig.min_frequency:
+                    if step.action not in action2step:
+                        action2step[step.action] = []
+                    action2step[step.action].append((trajectory, step_idx))
+        for bi in range(batch_size):
+            ra = np.random.randint(len(action2step.keys()))
+            action = list(action2step.keys())[ra]
+            steps = action2step[ra]
+            traj, step_idx = steps[np.random.randint(len(steps))]
+            obs, action, weight = traj.obs(step_idx)
+
+            all_obs.append(obs)
+            all_actions.append(action)
+        return (
+            torch.stack(all_obs),
+            torch.tensor(all_actions, device=Config.device).long(),
+        )

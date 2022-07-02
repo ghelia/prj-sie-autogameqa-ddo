@@ -60,7 +60,8 @@ class DDOLoss(torch.nn.Module):
                 is_option_factor = fb.is_option_factor(opt_idx, step_idx)
                 has_switch_to_option_factor = fb.has_switch_to_option_factor(opt_idx, step_idx)
                 add_logprob(logprobs, meta[:, opt_idx], has_switch_to_option_factor)
-                add_logprob(logprobs, action, is_option_factor * step.weight)
+                # add_logprob(logprobs, action, is_option_factor * step.weight)
+                add_logprob(logprobs, action, is_option_factor)
                 if step_idx < len(pptraj) - 1:
                     useless_next_switch = fb.useless_switch(opt_idx, step_idx + 1) * Config.useless_switch_factor
                     next_step = pptraj[step_idx + 1]

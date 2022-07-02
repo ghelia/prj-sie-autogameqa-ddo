@@ -14,6 +14,11 @@ class FeatureExtractor(torch.nn.Module):
         super().__init__()
         self.spatial_extractor = models.mobilenet_v2(pretrained=True)
         self.move_extractor = models.mobilenet_v2(pretrained=True)
+        self.normalize = transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        )
+
 
     def spatial(self, inputs: torch.Tensor) -> torch.Tensor:
         return inputs[:,-1]
@@ -26,6 +31,8 @@ class FeatureExtractor(torch.nn.Module):
         ], dim=1)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        with torch.no_grad():
+            inputs = self.normalize(inputs)
         spatial_inputs = self.spatial(inputs)
         move_inputs = self.temporal(inputs)
         # TODO torchvision Normalize
@@ -43,7 +50,7 @@ class PGMetaNetwork(torch.nn.Module):
             torch.nn.Tanh(),
             torch.nn.Softmax(dim=1)
         )
-        self.apply(self._init_weights)
+        # self.apply(self._init_weights)
 
     def _init_weights(self, module: torch.nn.Module) -> None:
         if isinstance(module, torch.nn.Linear):
@@ -64,7 +71,7 @@ class PGPolicyNetwork(torch.nn.Module):
             torch.nn.Tanh(),
             torch.nn.Softmax(dim=1)
         )
-        self.apply(self._init_weights)
+        # self.apply(self._init_weights)
 
     def _init_weights(self, module: torch.nn.Module) -> None:
         if isinstance(module, torch.nn.Linear):
@@ -85,7 +92,7 @@ class PGTerminationNetwork(torch.nn.Module):
             torch.nn.Tanh(),
             torch.nn.Sigmoid()
         )
-        self.apply(self._init_weights)
+        # self.apply(self._init_weights)
 
     def _init_weights(self, module: torch.nn.Module) -> None:
         if isinstance(module, torch.nn.Linear):

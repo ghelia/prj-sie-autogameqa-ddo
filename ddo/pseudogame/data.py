@@ -192,7 +192,7 @@ class ExpertData(Env):
         for bi in range(batch_size):
             ra = np.random.randint(len(action2step.keys()))
             action = list(action2step.keys())[ra]
-            steps = action2step[ra]
+            steps = action2step[action]
             traj, step_idx = steps[np.random.randint(len(steps))]
             obs, action, weight = traj.obs(step_idx)
 

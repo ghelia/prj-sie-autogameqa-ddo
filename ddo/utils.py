@@ -12,6 +12,7 @@ from .recorder import Recorder
 class Step(NamedTuple):
     current_obs: torch.Tensor
     current_action: Optional[torch.Tensor]
+    weight: torch.Tensor
 
 
 class Option(torch.nn.Module):
@@ -30,14 +31,17 @@ class Agent(torch.nn.Module):
         self.current_option = -1
         self.option_tracker = [0 for _ in range(Config.noptions)]
         self.option_change_tracker = [0 for _ in range(Config.noptions)]
+        self.action_tracker = {}
         self.action_prob = 0.
         self.termination_prob = 0.
         self.meta_prob = 0.
 
-    def reset(self) -> None:
+    def reset(self, reset_tracker: bool = True) -> None:
         self.current_option = -1
-        self.option_tracker = [0 for _ in range(Config.noptions)]
-        self.option_change_tracker = [0 for _ in range(Config.noptions)]
+        if reset_tracker:
+            self.action_tracker = {}
+            self.option_tracker = [0 for _ in range(Config.noptions)]
+            self.option_change_tracker = [0 for _ in range(Config.noptions)]
 
     def preprocess(self, obs: torch.Tensor) -> torch.Tensor:
         return obs
@@ -80,6 +84,9 @@ class Agent(torch.nn.Module):
             action = selection_distribution.sample()[0].int().item()
 
         self.action_prob = option.policy(obs)[0][action]
+        if action not in self.action_tracker:
+            self.action_tracker[action] = 0
+        self.action_tracker[action] += 1
         return action
 
     def all_probs(self, obs: torch.Tensor) -> torch.Tensor:
@@ -95,12 +102,14 @@ class Env(torch.nn.Module):
     def record(self, trajectory: List[Step], recorder: Recorder, agent: Agent) -> None:
         pass
 
-    def eval_agent(self, agent: Agent, neval: int, nsteps: int) -> float:
+    def eval_agent(self, agent: Agent, neval: int, nsteps: int, recorder: Recorder) -> float:
         success = 0
+        success_by_actions = {}
         print("eval")
+        agent.reset()
         with torch.no_grad():
             for _ in tqdm(range(neval)):
-                agent.reset()
+                agent.reset(reset_tracker=False)
                 trajectory = self.eval_batch(1, nsteps)
                 for step in trajectory:
                     if step.current_action is None:
@@ -108,12 +117,24 @@ class Env(torch.nn.Module):
                     expert_action = step.current_action.item()
                     obs = step.current_obs
                     agent_action = agent.action(obs, greedy=True)
+                    if expert_action not in success_by_actions:
+                        success_by_actions[expert_action] = [0,0]
+                    success_by_actions[expert_action][1] += 1
                     if expert_action == agent_action:
+                        success_by_actions[expert_action][0] += 1
                         success += 1
         success_rate = success/(nsteps*neval)
         print("success : ", success_rate)
-        print("option selections during last eval : ", agent.option_tracker)
-        print("option changements during last eval : ", agent.option_change_tracker)
+        print("total steps : ", (nsteps*neval))
+        print("action selections : ", agent.action_tracker)
+        print("option selections : ", agent.option_tracker)
+        print("option changements : ", agent.option_change_tracker)
+        print("success by actions")
+        for key, (action_success, action_total) in success_by_actions.items():
+            percent = action_success/action_total
+            print(f"{key} : {percent} {action_success}/{action_total}")
+            recorder.scalar(percent, f"action {key} imitation success")
+        agent.reset()
         return success_rate
 
     @abstractmethod

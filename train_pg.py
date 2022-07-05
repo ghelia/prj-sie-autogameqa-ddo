@@ -10,6 +10,7 @@ from ddo.recorder import Recorder
 from ddo.pseudogame.network import PGAgent
 from ddo.pseudogame.data import ExpertData
 from ddo.pseudogame.controls import CONTROLS
+from ddo.pseudogame.classify import train_classifier
 
 
 def get_csvs(path: str) -> List[str]:
@@ -44,5 +45,10 @@ if __name__ == "__main__":
     data = ExpertData(args.imgs, csvs, eval_csvs)
     save_controls(save_path)
     agent = PGAgent(len(CONTROLS))
+    data.print_frequency()
     agent.to(Config.device)
+    # for idx, option in enumerate(agent.options):
+    #     print(f"pretrain option {idx}")
+    #     train_classifier(agent, option.policy, data, 5, 50, 30, 0.0001)
+
     ddo(agent, recorder, save_path, data)

@@ -35,10 +35,11 @@ if __name__ == "__main__":
     recorder = Recorder(os.path.join("./logs", Config.session))
     save_path = os.path.join("./saves", Config.session)
     data = ExpertData(args.imgs, csvs, eval_csvs)
+    data.print_frequency()
     agent = PGAgent()
     agent.to(Config.device)
-    for idx, option in enumerate(agent.options):
-        print(f"pretrain option {idx}")
-        train_classifier(agent, option.policy, data, 5, 50, 30, 0.0001)
+    # for idx, option in enumerate(agent.options):
+    #     print(f"pretrain option {idx}")
+    #     train_classifier(agent, option.policy, data, 5, 50, 30, 0.0001)
 
     ddo(agent, recorder, save_path, data)

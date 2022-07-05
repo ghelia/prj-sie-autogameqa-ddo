@@ -16,6 +16,22 @@ from .network import PGAgent
 from ..config import Config
 
 
+LABELS = [
+    ["left", "right"],
+    ["forward", "backward"],
+    ["grab"],
+    ["jump"],
+    ["*"],
+    ["**"],
+    ["***"],
+    ["****"],
+    ["camera"],
+    ["*****"],
+    ["******"],
+    ["*******", "********"],
+    ["*********", "**********"],
+
+]
 CONTROLS: List[List[int]] = []
 CONTROLS_COUNT: Dict[str, int] = {}
 TOTAL_STEPS = 0
@@ -132,6 +148,25 @@ class ExpertData(Env):
         print("Number actions : ", len(CONTROLS))
         for key,count in CONTROLS_COUNT.items():
             print(f"{key} : {count/TOTAL_STEPS}")
+
+    def frequency(self, action: int) -> float:
+        freq = CONTROLS_COUNT[str(CONTROLS[action])] / TOTAL_STEPS
+        return freq
+
+    def label(self, control: List[int]) -> str:
+        label = ""
+        for idx,value in enumerate(control):
+            if value > 0:
+                if len(label) > 0:
+                    label += "/"
+                label += LABELS[idx][value - 1]
+        return label
+
+    def print_frequency(self) -> None:
+        for idx, control in enumerate(CONTROLS):
+            label = self.label(control)
+            freq = self.frequency(idx)
+            print(f"{label},{freq}")
 
     def get_trajectories(self, img_dir: str, csv_list: List[str], min_steps: int) -> List[Trajectory]:
         trajectories = []

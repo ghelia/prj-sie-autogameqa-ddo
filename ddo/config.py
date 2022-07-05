@@ -8,7 +8,7 @@ class Config:
     learning_rate_decay = 0.995
     batch_size = 20
     nsteps = 30
-    noptions = 4
+    noptions = 8
     nepoch = 100000
     nsubepoch = 10
     epsilon = 1e-12
@@ -25,4 +25,4 @@ class Config:
         device = torch.device("cpu")
     # device = torch.device("cpu")
 
-    session = datetime.now().strftime(f"KL{kl_divergence_factor}_%m_%d_%Y, %H:%M:%S")
+    session = datetime.now().strftime(f"%m_%d_%Y, %H-%M-%S")

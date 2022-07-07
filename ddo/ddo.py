@@ -40,7 +40,7 @@ def ddo(agent: Agent, recorder: Recorder, save_path: str, env: Env) -> None:
         print(f"Loss {np.mean(all_losses)}")
         print(f"KL Loss {np.mean(all_kl_losses)}")
         recorder.gradients_and_weights(agent)
-        success_rate = env.eval_agent(agent, Config.neval, Config.eval_nsteps)
+        success_rate = env.eval_agent(agent, Config.neval, Config.eval_nsteps, recorder)
         recorder.scalar(success_rate, "evaluation")
         scheduler.step()
         recorder.end_epoch()

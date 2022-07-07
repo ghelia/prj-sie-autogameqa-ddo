@@ -10,7 +10,7 @@ if __name__ == '__main__':
         packages=setuptools.find_packages(),
         description='Discovery of Deep Options',
         url='https://github.com/ghelia/prj-sie-autogameqa-ddo',
-        long_description=open('README.md').read(),
+        # long_description=open('README.md').read(),
         install_requires=[
             "protobuf==3.20.1",
             "pygame",

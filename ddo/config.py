@@ -25,4 +25,4 @@ class Config:
         device = torch.device("cpu")
     # device = torch.device("cpu")
 
-    session = datetime.now().strftime(f"%m_%d_%Y, %H:%M:%S_KL{kl_divergence_factor}_BS{batch_size}_nsteps{nsteps}_noptions{noptions}_usf{useless_switch_factor}")
+    session = datetime.now().strftime(f"%m_%d_%Y__%Hh%Mm%Ss")

@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Union
 
 from PIL import Image
 import numpy as np
@@ -15,6 +15,21 @@ from ..recorder import Recorder
 from .config import PGConfig
 from .network import PGAgent
 from ..config import Config
+
+def frequency(action: int) -> float:
+    freq = CONTROLS_COUNT[str(CONTROLS[action])] / TOTAL_STEPS
+    return freq
+
+def get_label(control: Union[int, List[int]]) -> str:
+    if isinstance(control, int):
+        control = CONTROLS[control]
+    label = ""
+    for idx,value in enumerate(control):
+        if value > 0:
+            if len(label) > 0:
+                label += "/"
+            label += LABELS[idx][value - 1]
+    return label
 
 
 class PGStep:
@@ -78,12 +93,8 @@ class Trajectory:
         # return os.path.join(dir_path, pathlib.Path(*fp.parts[1:]))
         return os.path.join(img_dir, frame_path)
 
-    def frequency(self, action: int) -> float:
-        freq = CONTROLS_COUNT[str(CONTROLS[action])] / TOTAL_STEPS
-        return freq
-
     def weight(self, action: int) -> float:
-        freq = self.frequency(action)
+        freq = frequency(action)
         if freq > PGConfig.min_frequency:
             return 1. - freq
         return 0.
@@ -120,6 +131,9 @@ class ExpertData(Env):
         for key,count in CONTROLS_COUNT.items():
             print(f"{key} : {count/TOTAL_STEPS}")
 
+    def action_label(self, action: int) -> str:
+        return get_label(action)
+
     def record(self, trajectory: List[Step], recorder: Recorder, agent: Agent) -> None:
         assert isinstance(agent, PGAgent)
         r = np.random.randint(len(trajectory))
@@ -133,23 +147,10 @@ class ExpertData(Env):
                 "temporal"
             )
 
-    def frequency(self, action: int) -> float:
-        freq = CONTROLS_COUNT[str(CONTROLS[action])] / TOTAL_STEPS
-        return freq
-
-    def label(self, control: List[int]) -> str:
-        label = ""
-        for idx,value in enumerate(control):
-            if value > 0:
-                if len(label) > 0:
-                    label += "/"
-                label += LABELS[idx][value - 1]
-        return label
-
     def print_frequency(self) -> None:
         for idx, control in enumerate(CONTROLS):
-            label = self.label(control)
-            freq = self.frequency(idx)
+            label = get_label(control)
+            freq = frequency(idx)
             print(f"{label},{freq}")
 
     def get_trajectories(self, img_dir: str, csv_list: List[str], min_steps: int) -> List[Trajectory]:
@@ -198,13 +199,16 @@ class ExpertData(Env):
             batch.append(step)
         return batch
 
-    def classifier_batch(self, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def classifier_batch(self, batch_size: int, evalset: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
         all_obs = []
         all_actions = []
         action2step: Dict[int, List[Tuple[Trajectory, int]]] = {}
-        for trajectory in self.trajectories:
+        trajectories = self.trajectories
+        if evalset:
+            trajectories = self.eval_trajectories
+        for trajectory in trajectories:
             for step_idx, step in enumerate(trajectory.steps):
-                if trajectory.frequency(step.action) > PGConfig.min_frequency:
+                if frequency(step.action) > PGConfig.min_frequency:
                     if step.action not in action2step:
                         action2step[step.action] = []
                     action2step[step.action].append((trajectory, step_idx))

@@ -102,7 +102,11 @@ class Env(torch.nn.Module):
     def record(self, trajectory: List[Step], recorder: Recorder, agent: Agent) -> None:
         pass
 
+    def action_label(self, action: int) -> str:
+        return str(action)
+
     def eval_agent(self, agent: Agent, neval: int, nsteps: int, recorder: Recorder) -> float:
+        agent.eval()
         success = 0
         success_by_actions = {}
         print("eval")
@@ -130,11 +134,17 @@ class Env(torch.nn.Module):
         print("option selections : ", agent.option_tracker)
         print("option changements : ", agent.option_change_tracker)
         print("success by actions")
+        hist = []
         for key, (action_success, action_total) in success_by_actions.items():
+            label = self.action_label(key)
             percent = action_success/action_total
-            print(f"{key} : {percent} {action_success}/{action_total}")
-            recorder.scalar(percent, f"action {key} imitation success")
+            recorder.hist(hist, "imitation ratios")
+            print(f"{label} ({key}): {percent} {action_success}/{action_total}")
+            recorder.scalar(percent, f"action {label} imitation success")
+            hist.append(percent)
+        recorder.hist(hist, "imitation ratios")
         agent.reset()
+        agent.train()
         return success_rate
 
     @abstractmethod

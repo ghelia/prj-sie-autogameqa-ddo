@@ -117,7 +117,6 @@ class PGAgent(Agent):
 
     def preprocess(self, obs: torch.Tensor) -> torch.Tensor:
         obs = obs.to(Config.device)
-        with torch.no_grad():
-            features = self.extractor(obs)
+        features = self.extractor(obs)
         return features
 

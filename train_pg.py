@@ -7,10 +7,11 @@ import numpy as np
 from ddo.ddo import ddo
 from ddo.config import Config
 from ddo.recorder import Recorder
+from ddo.pseudogame.config import PGConfig
 from ddo.pseudogame.network import PGAgent
 from ddo.pseudogame.data import ExpertData
 from ddo.pseudogame.controls import CONTROLS
-from ddo.pseudogame.classify import train_classifier
+from ddo.pseudogame.classify import train_classifier, eval_classifier
 
 
 def get_csvs(path: str) -> List[str]:
@@ -47,8 +48,28 @@ if __name__ == "__main__":
     agent = PGAgent(len(CONTROLS))
     data.print_frequency()
     agent.to(Config.device)
-    # for idx, option in enumerate(agent.options):
-    #     print(f"pretrain option {idx}")
-    #     train_classifier(agent, option.policy, data, 5, 50, 30, 0.0001)
+    for e in range(PGConfig.classifier_nepoch):
+        print(f"Pretrain epoch {e}")
+        for idx, option in enumerate(agent.options):
+            print(f"pretrain option {idx}")
+            train_classifier(
+                agent,
+                option.policy,
+                data,
+                PGConfig.classifier_nsteps,
+                Config.batch_size,
+                PGConfig.classifier_learning_rate,
+                recorder
+            )
+            eval_classifier(
+                agent,
+                option.policy,
+                data,
+                300,
+                recorder
+            )
+    print("Eval before training")
+    data.eval_agent(agent, Config.neval, Config.eval_nsteps, recorder)
 
+    print("DDO training")
     ddo(agent, recorder, save_path, data)

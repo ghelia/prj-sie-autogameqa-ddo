@@ -4,16 +4,16 @@ from datetime import datetime
 
 class Config:
 
-    learning_rate = 0.015
+    learning_rate = 0.0001
     learning_rate_decay = 0.995
-    batch_size = 2
-    nsteps = 3
+    batch_size = 30
+    nsteps = 30
     noptions = 4
     nepoch = 100000
-    nsubepoch = 5
+    nsubepoch = 10
     epsilon = 1e-12
-    neval = 3
-    eval_nsteps = 10
+    neval = 10
+    eval_nsteps = 100
 
     useless_switch_factor = 0.15
     kl_divergence_factor = 0. # 0.001

@@ -39,9 +39,11 @@ class DDOLoss(torch.nn.Module):
     def forward(self, trajectory: List[Step], agent: Agent) -> torch.Tensor:
         pptraj = []
         for step in trajectory:
+            with torch.no_grad():
+                pobs = agent.preprocess(step.current_obs)
             pptraj.append(
                 Step(
-                    agent.preprocess(step.current_obs),
+                    pobs,
                     step.current_action,
                     step.weight
                 )
